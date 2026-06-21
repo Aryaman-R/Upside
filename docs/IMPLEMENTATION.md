@@ -36,6 +36,11 @@ and no real-money handling anywhere in the system.
   The schema is versioned (`SCHEMA_VERSION`, currently `3`) and `migrateState`
   backfills any keys an older blob is missing, so shape changes don't crash the
   app. Fully functional with storage disabled (degrades to in-memory only).
+- **Cloud sync (optional, Phase 1):** an `AuthProvider` (`AuthContext`) wraps the
+  app. When Supabase env vars are set, users can sign in (email/password) and the
+  full reducer state syncs to a per-user JSONB row (`app_state`, RLS-isolated) —
+  pull-on-sign-in / debounced-push-on-change, offline-first. With no env it's
+  inert and the app stays fully local. See [`BACKEND.md`](BACKEND.md).
 - **Routing:** `react-router-dom` with five routes plus a catch-all redirect.
 - **Styling:** Tailwind CSS utility classes, with two shared component classes
   (`.surface`, `.surface-muted`) defined in `index.css` and a small brand color

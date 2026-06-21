@@ -99,6 +99,21 @@ npm test          # run reducer unit tests (Node's built-in test runner)
 For a full run guide (prerequisites, all scripts, a guided walkthrough,
 troubleshooting, and deploy notes) see [`RUN.md`](RUN.md).
 
+### Cloud sync (optional)
+
+Upside runs **fully local and offline by default** — no account, no network. You
+can optionally enable **accounts + multi-device sync** by pointing it at a
+[Supabase](https://supabase.com) project:
+
+```bash
+cp .env.example .env.local   # then add your Supabase URL + anon key
+```
+
+Apply `supabase/migrations/0001_init.sql`, then sign up via **Settings →
+Account**. Your local progress is uploaded on first sign-in and syncs from then
+on. Full setup: [`supabase/README.md`](supabase/README.md). Architecture &
+roadmap: [`docs/BACKEND.md`](docs/BACKEND.md).
+
 The app ships with **seed data** (a couple of open positions, some savings
 history, a journal entry) so every screen looks alive on first run. To wipe
 back to a fresh state, clear the `upside.state.v1` key in your browser's

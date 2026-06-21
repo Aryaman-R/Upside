@@ -6,6 +6,34 @@ Handoff doc for the next person/agent picking this up. Pairs with
 
 ---
 
+## Wave 5 — backend Phase 1: auth + cloud sync ☁️
+
+The backend has begun. **Phase 1 (auth + offline-first sync) is implemented** and
+**optional** — with no env vars the app runs exactly as before (fully local).
+
+- **Schema:** `supabase/migrations/0001_init.sql` — a per-user `app_state` JSONB
+  snapshot with **Row-Level Security** (every row scoped to `auth.uid()`).
+- **Auth:** Supabase email/password (`src/context/AuthContext.jsx`,
+  `src/lib/supabase.js`); inert when unconfigured.
+- **Sync:** `src/lib/cloudSync.js` + wiring in `AppContext.jsx` — on sign-in,
+  pull the cloud snapshot or upload local ("claim local progress"); debounced
+  push on change; `syncStatus` shown in the Settings **Account card** + a TopBar
+  chip. Reducer gained a `HYDRATE` action (migrate + replace).
+- **Setup:** [`supabase/README.md`](supabase/README.md); copy `.env.example` →
+  `.env.local`. `.env*` is gitignored.
+- **Verified:** `npm test` (15), `npm run lint`, `npm run build`, and a no-env
+  boot (HTTP 200) all pass.
+
+**Next: Phase 2 — server-authoritative money** (normalize the JSONB snapshot into
+tables; validate point/position/challenge writes server-side). See
+[`docs/BACKEND.md`](docs/BACKEND.md) §7.
+
+> ⚠️ Live end-to-end sync needs a real Supabase project (URL + anon key) + the
+> migration applied — that can't be provisioned from this repo. The code is
+> wired and builds; it activates the moment those env vars are present.
+
+---
+
 ## Wave 4 — quality, responsible-gambling depth, backend boundary 🧰
 
 This wave hardened the app and pushed the **frontend-only** roadmap to its
@@ -169,11 +197,13 @@ needs a server.
 2. **TypeScript migration** for the data models + reducer.
 3. **Full a11y audit** (screen-reader labels, live regions).
 
-**The real next increment is the backend** — see
-[`docs/BACKEND.md`](docs/BACKEND.md). Start with **Phase 1: auth + sync**
-(identity + cloud-backed state + "claim my local progress"), which unblocks real
-multiplayer social, outcomes measurement, reminders, and eventually Upside Plus
-payments. Everything money-related stays bound by the no-real-money invariants.
+**Backend is underway** — see [`docs/BACKEND.md`](docs/BACKEND.md). **Phase 1
+(auth + sync) is done** (Wave 5). The next increment is **Phase 2:
+server-authoritative money** — normalize the `app_state` JSONB snapshot into
+tables (positions, journal, social, …) and validate point/position/challenge
+writes server-side, then layer **Phase 3 real-time social**. Everything
+money-related stays bound by the no-real-money invariants. To run Phase 1 live,
+create a Supabase project and follow [`supabase/README.md`](supabase/README.md).
 
 ---
 

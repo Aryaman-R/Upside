@@ -10,6 +10,11 @@ Pairs with [`IMPLEMENTATION.md`](IMPLEMENTATION.md) (current architecture),
 [`../HANDOFF.md`](../HANDOFF.md) (status), and [`MONETIZATION.md`](MONETIZATION.md)
 (revenue, which mostly unlocks *after* a backend exists).
 
+> ✅ **Phase 1 (auth + sync) is implemented** — Supabase email/password auth and
+> offline-first cloud state sync. It's *optional*: with no env vars the app runs
+> exactly as before (fully local). Setup: [`../supabase/README.md`](../supabase/README.md).
+> Remaining phases (2–7) are still ahead.
+
 ---
 
 ## 1. Why now
@@ -114,13 +119,29 @@ The reducer's state shape is already a clean schema; it maps almost 1:1 to table
 
 ## 7. Phased rollout
 
-1. **Auth + sync** — identity, cloud-backed state, "claim local progress." 
-2. **Server-authoritative money** — points/positions/challenges move to the server.
+1. ✅ **Auth + sync** — identity, cloud-backed state, "claim local progress." **Done**
+   (Supabase email/password + `app_state` JSONB snapshot + RLS; offline-first;
+   `syncStatus` surfaced in Settings + the top bar).
+2. **Server-authoritative money** — points/positions/challenges move to the server
+   (normalize `app_state` into tables; validate writes server-side). **← next**
 3. **Real social** — bidirectional friends, invites, presence, mutually-settled challenges (realtime).
 4. **Outcomes measurement** — opt-in de-identified metrics (unlocks grants + B2B evidence).
 5. **Reminders/nudges** — scheduler + web push.
 6. **Payments / Upside Plus** — Stripe entitlements (still no wagering).
 7. **(Optional, much later) Real savings vault** — via a regulated partner, savings-first.
+
+### Phase 1 implementation notes
+- **Sync model:** the whole reducer state is stored as one JSONB row per user
+  (`app_state`), upserted with last-write-wins (`updated_at`). This makes the
+  existing client multi-device with minimal change; Phase 2 normalizes it.
+- **Offline-first:** `localStorage` stays the primary cache; sign-in pulls the
+  cloud snapshot (or uploads local on first sign-in). Signed-out = anonymous local.
+- **Files:** `supabase/migrations/0001_init.sql`, `src/lib/supabase.js`,
+  `src/lib/cloudSync.js`, `src/context/AuthContext.jsx`, sync wiring in
+  `AppContext.jsx`, `src/components/auth/AccountCard.jsx`.
+- **Known follow-ups:** the Supabase SDK adds ~57 kB gzipped — lazy-load it when
+  configured to keep the offline bundle lean; add an account-deletion flow before
+  any real launch; consider multi-device conflict handling beyond last-write-wins.
 
 ## 8. What does *not* change
 
@@ -130,6 +151,8 @@ The reducer's state shape is already a clean schema; it maps almost 1:1 to table
 
 ---
 
-**Bottom line:** the client-only milestone is done and verified (build + lint +
-14 reducer tests green). The next meaningful increment is **Phase 1: auth +
-sync** — and that is where backend implementation should begin.
+**Bottom line:** the client-only milestone is done, and **backend Phase 1 (auth +
+sync) is now implemented** (optional, offline-first, build + lint + 15 reducer
+tests green). The next meaningful increment is **Phase 2: server-authoritative
+money** — normalizing the JSONB snapshot into tables and validating writes
+server-side.

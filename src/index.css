@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-ink-900 text-slate-100 font-sans;
+  }
+
+  /* Consistent focus ring for keyboard users across custom controls. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-400 ring-offset-2 ring-offset-ink-900;
+  }
+}
+
+@layer components {
+  /* Frosted card surface reused across the app. */
+  .surface {
+    @apply rounded-2xl border border-white/10 bg-ink-800/80 shadow-lg shadow-black/20;
+  }
+
+  .surface-muted {
+    @apply rounded-xl border border-white/5 bg-white/5;
+  }
+}
+
+/* Thin, unobtrusive scrollbars to keep the dashboard feeling calm. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

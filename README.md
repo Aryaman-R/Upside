@@ -86,6 +86,9 @@ npm run preview   # preview the production build locally
 npm run lint      # run ESLint
 ```
 
+For a full run guide (prerequisites, all scripts, a guided walkthrough,
+troubleshooting, and deploy notes) see [`RUN.md`](RUN.md).
+
 The app ships with **seed data** (a couple of open positions, some savings
 history, a journal entry) so every screen looks alive on first run. To wipe
 back to a fresh state, clear the `upside.state.v1` key in your browser's

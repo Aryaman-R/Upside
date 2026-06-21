@@ -26,13 +26,16 @@ and no real-money handling anywhere in the system.
 ```
 
 - **State management:** a single `useReducer` store exposed through React
-  Context (`AppContext`). Every page reads and writes through the `useApp()`
-  hook. No Redux, no external state library — the app is small enough that one
-  reducer keeps things obvious and debuggable.
+  Context (`AppContext`). The **pure reducer + initial state + migration live in
+  `src/context/reducer.js`** (no React/JSX) so they can be unit-tested directly
+  (`src/context/reducer.test.js`, run via `npm test`); `AppContext.jsx` is thin
+  React glue (hydration, persistence, derived values). Every page reads/writes
+  through the `useApp()` hook. No Redux, no external state library.
 - **Persistence (optional):** the entire state object is serialized to
-  `localStorage` (`upside.state.v1`) on every change and rehydrated on load.
-  This is a convenience so returning users keep their play progress; the app is
-  fully functional with storage disabled (it degrades to in-memory only).
+  `localStorage` (key `upside.state.v2`) on every change and rehydrated on load.
+  The schema is versioned (`SCHEMA_VERSION`, currently `3`) and `migrateState`
+  backfills any keys an older blob is missing, so shape changes don't crash the
+  app. Fully functional with storage disabled (degrades to in-memory only).
 - **Routing:** `react-router-dom` with five routes plus a catch-all redirect.
 - **Styling:** Tailwind CSS utility classes, with two shared component classes
   (`.surface`, `.surface-muted`) defined in `index.css` and a small brand color
@@ -124,7 +127,17 @@ The current user is merged into this list at render time, never stored in it.
 ### Full app state
 ```ts
 AppState {
+  __v: number                      // schema version (migrated on load)
+  onboarded: boolean               // gates the first-run onboarding modal
   user:    { id, name, avatar }
+  settings: {
+    dailyAllowance: number         // once-a-day claimable play points
+    dailyStakeLimit: number        // self-imposed daily cap (0 = off)
+    cooloffUntil: string | null    // ISO timestamp of a "take a break" window
+  }
+  lastActive: string               // day key (YYYY-MM-DD) for the streak
+  lastAllowanceClaim: string|null  // day key of the last daily claim
+  stakedToday: { day: string, amount: number }  // for the stake limit
   points:  number                  // play-points balance
   positions: Position[]
   resolvedMarkets: { [marketId]: winningOutcomeId }
@@ -132,6 +145,11 @@ AppState {
   journal: JournalEntry[]
   stats:   { wins: number, losses: number }
   streak:  number
+  social: {                        // mock + local; real multiplayer needs a backend
+    friends:    Player[]
+    groups:     { id, name, emoji, memberIds, createdAt }[]
+    challenges: Challenge[]         // head-to-head play-money bets vs a friend
+  }
 }
 ```
 
@@ -149,6 +167,15 @@ All mutations go through `reducer(state, action)` in `AppContext.jsx`.
 | `ADD_SAVINGS` | `{ amount, note }` | Increments `savings.total` and prepends a `SavingsEntry`. |
 | `SET_SAVINGS_GOAL` | `{ goal }` | Updates the savings goal target. |
 | `LOG_URGE` | `{ prompt, reflection, moodBefore, moodAfter, savedSnapshot }` | Prepends a `JournalEntry`. |
+| `COMPLETE_ONBOARDING` / `UPDATE_PROFILE` | `{ name, avatar, ... }` | Sets onboarded + profile / edits profile. |
+| `SET_ALLOWANCE` / `CLAIM_DAILY` | `{ amount }` / — | Sets the daily allowance / grants it once per day. |
+| `CHECK_IN` | — | Advances the streak on consecutive days, resets after a gap (runs once per load). |
+| `SET_STAKE_LIMIT` | `{ amount }` | Sets the self-imposed daily stake cap (0 = off). |
+| `START_COOLOFF` / `END_COOLOFF` | `{ hours }` / — | Starts/ends a "take a break" window. **`PLACE_BET` and `CREATE_CHALLENGE` are blocked while a cool-off is active or the daily stake limit is exceeded.** |
+| `ADD_FRIEND` / `REMOVE_FRIEND` | `{ friend }` / `{ id }` | Adds (deduped) / removes a friend (also clears group rosters). |
+| `CREATE_GROUP` / `LEAVE_GROUP` | `{ name, emoji, memberIds }` / `{ id }` | Creates/removes a group. |
+| `CREATE_CHALLENGE` | `{ friend, marketId, outcomeId, stake, price, ... }` | Escrows your stake on a head-to-head pick vs a friend. |
+| `RESOLVE_CHALLENGE` | `{ id, won }` | Settles a challenge; winner takes the 2× matched pot. |
 | `RESET` | — | Restores seeded initial state. |
 
 **Derived values** (computed in a `useMemo` inside the provider, not stored):
@@ -168,19 +195,29 @@ distributions while staying entirely in play points.
 ## 4. Component breakdown
 
 ### UI primitives (`src/components/ui/`)
+- **Icon** — dependency-free inline-SVG line-icon set (Lucide-style) used across
+  nav, stat tiles, the top bar, and trends instead of emoji-as-icons.
 - **Button** — variants (`primary`, `secondary`, `ghost`, `danger`, `outline`)
   and sizes; consistent disabled/focus styles.
-- **Card** — frosted `.surface` container; `as` prop for semantic tags.
+- **Card** — `.surface` container; `as` prop for semantic tags.
 - **Badge** — status pills (`win`, `loss`, `open`, `brand`, `warn`, `neutral`).
 - **ProgressBar** — 0..1 fraction, used by savings + cooldown.
-- **StatTile** — labeled KPI tile with value/sub/icon.
+- **StatTile** — labeled KPI tile (icon chip + value/sub).
+- **Sparkline / Donut / BarChart** — tiny dependency-free SVG charts (market
+  price trends + Insights).
 - **Modal** — dependency-free dialog: Escape-to-close, backdrop click, scroll
-  lock, focus ring.
+  lock, and a **focus trap** (Tab cycling) with focus restore on close.
 
 ### Feature components
 - **layout/Layout.jsx** — responsive sidebar (desktop) / top strip + floating
-  button (mobile); shows live points & money-kept; hosts the global
-  `UrgeModal`.
+  button (mobile); icon nav; hosts the global `UrgeModal` + first-run
+  `OnboardingModal`.
+- **layout/TopBar.jsx** — sticky context bar: live balances, streak, daily-claim,
+  avatar → Settings.
+- **onboarding/OnboardingModal.jsx** — non-dismissable first-run flow
+  (philosophy → name/avatar → daily allowance).
+- **social/ChallengeModal.jsx**, **social/CreateGroupModal.jsx** — head-to-head
+  challenge composer and group builder.
 - **markets/MarketCard.jsx** — one market; outcome buttons trigger the bet flow;
   reflects resolved state with ✓/✕ markers.
 - **markets/BetModal.jsx** — stake entry with quick-stake chips, live payout
@@ -199,6 +236,27 @@ distributions while staying entirely in play points.
   points, with medals and streaks.
 - **MoneyKept** — hero total + goal progress + milestone copy, KPI tiles, a
   "redirect an impulse" form with quick amounts, and a history log.
+- **Insights** — live streak hero, KPI row, cumulative Money-Kept area chart,
+  win-rate donut, before/after mood bars, and recent reflections (urge journal).
+- **Social** (`/social`) — friends (add/remove from a suggestion pool), groups
+  with a shared standings board, and head-to-head challenges (settle to award
+  the 2× pot). Mock + local; real multiplayer needs a backend.
+- **Settings** — profile/avatar/allowance, **play limits & breaks**
+  (`SET_STAKE_LIMIT` / `START_COOLOFF`), data export (JSON + journal CSV), reset.
+- **Plus** (`/plus`) — non-functional Upside Plus upsell teaser (no payments).
+
+---
+
+## 4a. Testing
+
+The pure reducer is unit-tested with **Node's built-in test runner** (no test
+framework dependency): `npm test` runs `src/context/reducer.test.js` (14 tests)
+covering the money-affecting paths and responsible-gambling guards — bets,
+overdraw/limit/cool-off rejection, market + challenge settlement math, savings,
+streak transitions, the daily allowance, friend dedupe, and `migrateState`
+backfill. Keeping the reducer pure (in `reducer.js`, free of React) is what makes
+this possible. Not yet covered: component/e2e tests (a Playwright smoke test is
+the next increment — see HANDOFF).
 
 ---
 

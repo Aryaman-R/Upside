@@ -93,6 +93,7 @@ Other scripts:
 npm run build     # production build into dist/
 npm run preview   # preview the production build locally
 npm run lint      # run ESLint
+npm test          # run reducer unit tests (Node's built-in test runner)
 ```
 
 For a full run guide (prerequisites, all scripts, a guided walkthrough,
@@ -113,10 +114,14 @@ src/
 ├── App.jsx                  # routes + Layout shell
 ├── index.css                # Tailwind layers + shared component classes
 ├── context/
-│   └── AppContext.jsx       # ⭐ single source of truth (useReducer + persistence)
+│   ├── reducer.js           # ⭐ pure state logic + initial state + migration (unit-tested)
+│   ├── reducer.test.js      # reducer unit tests (npm test)
+│   └── AppContext.jsx       # React glue: hydration, persistence, derived values
 ├── data/                    # mock data modules (no real data anywhere)
-│   ├── markets.js           # prediction markets
+│   ├── markets.js           # prediction markets (+ deterministic price history)
 │   ├── leaderboard.js       # mock rival players
+│   ├── social.js            # mock friends + group options
+│   ├── avatars.js           # avatar + allowance options
 │   ├── prompts.js           # reflection prompts + mood tags
 │   └── resources.js         # real problem-gambling support resources
 ├── lib/
@@ -130,10 +135,12 @@ src/
 └── pages/                   # Dashboard, Markets, Portfolio, Leaderboard, MoneyKept
 ```
 
-For a deeper dive — data models, component breakdown, state flow — see
+For a deeper dive — data models, component breakdown, state flow, testing — see
 [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md). For project status and next
 steps, see [`HANDOFF.md`](HANDOFF.md). For how Upside could sustain itself
 without compromising the mission, see [`docs/MONETIZATION.md`](docs/MONETIZATION.md).
+For where the client-only milestone ends and a backend begins, see
+[`docs/BACKEND.md`](docs/BACKEND.md).
 
 ---
 

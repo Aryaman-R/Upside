@@ -6,6 +6,34 @@ Handoff doc for the next person/agent picking this up. Pairs with
 
 ---
 
+## Wave 4 — quality, responsible-gambling depth, backend boundary 🧰
+
+This wave hardened the app and pushed the **frontend-only** roadmap to its
+sensible end:
+
+- **Pure, tested reducer.** All state logic extracted to
+  `src/context/reducer.js` (no React); **14 unit tests** via Node's built-in
+  runner (`npm test`) cover bets, overdraw/limit/cool-off guards, market +
+  challenge settlement, savings, streak transitions, daily allowance, friend
+  dedupe, and migration. `AppContext` is now thin React glue.
+- **Responsible-gambling controls.** Self-imposed **daily stake limit** and
+  **"take a break" cool-off** (24h/3d/1wk), enforced in the reducer and surfaced
+  across Settings, betting, and challenges (urge tools stay open during a break).
+- **Date-aware settlement.** Closed markets are flagged "ready to settle" in
+  Portfolio with a "Settle all closed" bulk action.
+- **Journal home + export.** Urge reflections now appear on Insights; CSV export
+  added in Settings (alongside JSON).
+- **Accessibility.** Modal now has a real focus trap (Tab cycling) + focus
+  restore on close.
+- **Backend boundary defined.** [`docs/BACKEND.md`](docs/BACKEND.md) marks where
+  client-only ends and what a backend unlocks (accounts/sync, real multiplayer,
+  outcomes measurement, payments) — the recommended next increment is **Phase 1:
+  auth + sync**.
+
+Verified: `npm test` (14 pass), `npm run lint`, `npm run build` all clean.
+
+---
+
 ## Wave 3 — professional UI + social 🎨
 
 - **Design-system overhaul** for a professional, product-grade look (away from
@@ -92,7 +120,8 @@ Cross-cutting:
 ### Verified
 - `npm install` — clean (some upstream deprecation/audit warnings, none
   blocking).
-- `npm run build` — succeeds (56 modules, ~65 kB gzipped JS).
+- `npm test` — 14 reducer unit tests pass (Node's built-in runner, no deps).
+- `npm run build` — succeeds (~72 modules, ~80 kB gzipped JS).
 - `npm run dev` — boots on :5173, serves HTTP 200.
 - `npm run lint` — passes with no errors.
 
@@ -102,9 +131,10 @@ Cross-cutting:
 
 These are intentional MVP boundaries or honest rough edges, not bugs:
 
-1. **No automated tests.** No unit/integration/e2e tests exist yet. The reducer
-   in `AppContext.jsx` is the highest-value target (pure function, easy to test) —
-   now with more actions to cover (`CHECK_IN`, `CLAIM_DAILY`, `COMPLETE_ONBOARDING`).
+1. **Reducer is unit-tested; no e2e yet.** `npm test` runs 14 reducer tests
+   (`src/context/reducer.test.js`). There's still no component/e2e coverage — a
+   Playwright smoke test of onboarding → bet → settle → savings → urge is the
+   next testing increment (and needs a browser, so it's CI-oriented).
 2. **Manual UI verification only.** The build, lint, and server-boot were
    verified programmatically; full click-through interaction testing in a real
    browser was not automated. Recommend a manual pass or Playwright smoke tests.
@@ -115,9 +145,9 @@ These are intentional MVP boundaries or honest rough edges, not bugs:
    to keep the demo deterministic. A date-based auto-settle is still optional.
 5. **Sparklines/trends are synthetic.** Market price history is deterministically
    generated from the market id (no real feed) — cosmetic by design.
-6. **Accessibility is partial.** Focus ring + Escape-to-close + ARIA on the
-   modal/progress bar are in; the onboarding modal is intentionally
-   non-dismissable. A full a11y audit (focus trapping, labels) hasn't been done.
+6. **Accessibility improved, not audited.** Modals now trap focus + restore it
+   on close; focus ring, Escape-to-close, and ARIA are in. A full screen-reader
+   pass (labels on every control, live-region announcements) is still pending.
 7. **Single local user.** Profile (name/avatar/allowance) is now editable, but
    there's still no auth/accounts or multi-device sync — all state is local.
 8. **Upside Plus is a teaser only.** `/plus` collects no payment and makes no
@@ -127,24 +157,23 @@ These are intentional MVP boundaries or honest rough edges, not bugs:
 
 ## Recommended next steps 🚀
 
-Wave 2 cleared most of the original list (state versioning, reset control,
-date-aware markets, live streak, onboarding/personalization, insights). Remaining,
-in rough priority order:
+**The frontend-only roadmap is effectively complete.** Waves 2–4 cleared the
+original list (state versioning, reset, date-aware markets + settle, live streak,
+onboarding/personalization, insights, responsible-gambling limits, reducer tests,
+modal a11y). The remaining frontend polish is small; the substantive work now
+needs a server.
 
-1. **Add tests.** Start with the reducer (`PLACE_BET` overdraw guard,
-   `RESOLVE_MARKET` win/lose math, `ADD_SAVINGS`, `CHECK_IN` streak transitions,
-   `CLAIM_DAILY` once-per-day guard). Add a Playwright smoke test for
-   onboarding → bet → resolve → savings → urge.
-2. **Manual QA pass** across desktop and mobile breakpoints; confirm onboarding,
-   daily claim, urge cooldown, date-locked markets, and Insights charts render
-   with both empty and populated data.
-3. **TypeScript migration** for safety on the data models and reducer.
-4. **Optional date-based auto-settle** for markets past `closeDate`.
-5. **Deeper harm-reduction features**: self-imposed play limits, time-of-day
-   nudges, optional check-in reminders, accountability sharing.
-6. **Toward revenue** (see [`docs/MONETIZATION.md`](docs/MONETIZATION.md)):
-   accounts + sync, an opt-in outcomes-measurement layer, and a real Plus
-   checkout — each gated on a backend + privacy review.
+**Frontend polish still doable without a backend** (optional, low priority):
+1. **Playwright e2e** smoke test (onboarding → bet → settle → savings → urge) —
+   CI-oriented since it needs a browser. (Reducer is already unit-tested.)
+2. **TypeScript migration** for the data models + reducer.
+3. **Full a11y audit** (screen-reader labels, live regions).
+
+**The real next increment is the backend** — see
+[`docs/BACKEND.md`](docs/BACKEND.md). Start with **Phase 1: auth + sync**
+(identity + cloud-backed state + "claim my local progress"), which unblocks real
+multiplayer social, outcomes measurement, reminders, and eventually Upside Plus
+payments. Everything money-related stays bound by the no-real-money invariants.
 
 ---
 

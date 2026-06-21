@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Modal from '../ui/Modal.jsx'
 import Button from '../ui/Button.jsx'
+import Icon from '../ui/Icon.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import { AVATARS, ALLOWANCE_OPTIONS } from '../../data/avatars.js'
 import { formatPoints } from '../../lib/format.js'
@@ -17,6 +18,19 @@ export default function OnboardingModal({ open }) {
   const [avatar, setAvatar] = useState(AVATARS[0])
   const [allowance, setAllowance] = useState(500)
 
+  // Move keyboard focus to the new step's first control on each step change so
+  // keyboard / screen-reader users don't get dropped on <body>. Skips the
+  // initial mount (Modal already handles focus-in on open).
+  const stepRef = useRef(null)
+  const firstRun = useRef(true)
+  useEffect(() => {
+    if (firstRun.current) {
+      firstRun.current = false
+      return
+    }
+    stepRef.current?.querySelector('input, textarea, select, button')?.focus?.()
+  }, [step])
+
   function finish() {
     dispatch({
       type: 'COMPLETE_ONBOARDING',
@@ -25,7 +39,7 @@ export default function OnboardingModal({ open }) {
   }
 
   return (
-    <Modal open={open} onClose={() => {}} maxWidth="max-w-lg">
+    <Modal open={open} onClose={() => {}} ariaLabel="Welcome to Upside" maxWidth="max-w-lg">
       {/* Progress dots */}
       <div className="mb-5 flex items-center gap-2">
         {[0, 1, 2].map((i) => (
@@ -36,30 +50,47 @@ export default function OnboardingModal({ open }) {
         ))}
       </div>
 
+      <div ref={stepRef}>
       {step === 0 && (
-        <div className="space-y-4 animate-fade-in">
-          <div className="text-center">
-            <div className="text-4xl">📈</div>
-            <h2 className="mt-2 text-2xl font-extrabold text-slate-50">Welcome to Upside</h2>
-            <p className="mt-1 text-sm text-slate-400">Bet on yourself, not against your wallet.</p>
+        <div className="space-y-5 animate-fade-in">
+          {/* Gradient header band */}
+          <div className="relative -mx-6 -mt-6 mb-1 overflow-hidden bg-mesh-brand px-6 py-8 text-center">
+            <div
+              className="pointer-events-none absolute -top-20 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-brand-500/25 blur-3xl"
+              aria-hidden
+            />
+            <div className="relative">
+              <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/25 shadow-glow-sm">
+                <Icon name="logo" size={26} />
+              </span>
+              <p className="eyebrow mb-2 text-center">Welcome</p>
+              <h2 className="font-display text-3xl font-black tracking-display text-gradient-brand sm:text-display-sm">
+                Welcome to Upside
+              </h2>
+              <p className="mt-2 text-sm text-slate-300">
+                Bet on yourself, not against your wallet.
+              </p>
+            </div>
           </div>
+
           <ul className="space-y-3">
-            <Principle icon="🎮" title="Satisfy the itch — safely">
+            <Principle icon="markets" title="Satisfy the itch — safely" delay={0}>
               Forecast real events, build a portfolio, climb the leaderboard. All with{' '}
               <strong className="text-slate-200">play points</strong>, never real money.
             </Principle>
-            <Principle icon="💚" title="Redirect the money">
+            <Principle icon="heart" title="Redirect the money" delay={90}>
               When a real-money urge hits, log that amount into{' '}
               <strong className="text-slate-200">Money Kept</strong>. The loss becomes a visible win.
             </Principle>
-            <Principle icon="🫧" title="Interrupt the urge">
+            <Principle icon="wind" title="Interrupt the urge" delay={180}>
               A one-tap pause — cooldown, reflection, and real help lines — is always a click away.
             </Principle>
           </ul>
-          <div className="rounded-lg bg-amber-500/10 p-3 text-center text-xs text-amber-200">
-            No real money is ever wagered, held, or moved. Points have no cash value.
+          <div className="flex items-center justify-center gap-2 rounded-lg bg-amber-500/10 p-3 text-center text-xs text-amber-200">
+            <Icon name="shield" size={15} className="shrink-0" />
+            <span>No real money is ever wagered, held, or moved. Points have no cash value.</span>
           </div>
-          <Button className="w-full" onClick={() => setStep(1)}>
+          <Button fullWidth onClick={() => setStep(1)}>
             Get started
           </Button>
         </div>
@@ -78,7 +109,8 @@ export default function OnboardingModal({ open }) {
               onChange={(e) => setName(e.target.value)}
               maxLength={24}
               placeholder="e.g. Alex"
-              className="w-full rounded-xl border border-white/10 bg-ink-900/60 p-3 text-slate-100 placeholder:text-slate-500 focus:border-brand-400"
+              aria-label="Display name"
+              className="input w-full"
             />
             <p className="mt-1 text-xs text-slate-500">Optional — leave blank to stay anonymous as “You”.</p>
           </div>
@@ -143,15 +175,22 @@ export default function OnboardingModal({ open }) {
           </div>
         </div>
       )}
+      </div>
     </Modal>
   )
 }
 
-function Principle({ icon, title, children }) {
+function Principle({ icon, title, children, delay = 0 }) {
   return (
-    <li className="surface-muted flex gap-3 p-3">
-      <span className="text-xl" aria-hidden>
-        {icon}
+    <li
+      className="surface-muted flex gap-3 p-3 animate-fade-in"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <span
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-500/12 text-brand-300 ring-1 ring-brand-500/15"
+        aria-hidden
+      >
+        <Icon name={icon} size={18} />
       </span>
       <div>
         <p className="text-sm font-semibold text-slate-100">{title}</p>

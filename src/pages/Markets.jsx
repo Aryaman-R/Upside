@@ -1,9 +1,13 @@
 import { useMemo, useState } from 'react'
 import MarketCard from '../components/markets/MarketCard.jsx'
 import BetModal from '../components/markets/BetModal.jsx'
-import Badge from '../components/ui/Badge.jsx'
 import Card from '../components/ui/Card.jsx'
 import Button from '../components/ui/Button.jsx'
+import Icon from '../components/ui/Icon.jsx'
+import Reveal from '../components/ui/Reveal.jsx'
+import EmptyState from '../components/ui/EmptyState.jsx'
+import PageHeader from '../components/ui/PageHeader.jsx'
+import AnimatedNumber from '../components/ui/AnimatedNumber.jsx'
 import { Link } from 'react-router-dom'
 import { MARKETS, MARKET_CATEGORIES } from '../data/markets.js'
 import { useApp } from '../context/AppContext.jsx'
@@ -21,15 +25,24 @@ export default function Markets() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-50">Markets</h1>
-          <p className="text-sm text-slate-400">
-            Forecast real events with play points. No money, all of the thrill.
-          </p>
-        </div>
-        <Badge tone="brand">Balance: {formatPoints(points)} pts</Badge>
-      </header>
+      <PageHeader
+        eyebrow="Play-money prediction markets"
+        title="Markets"
+        subtitle="Forecast real events with play points. No money, all of the thrill."
+        action={
+          <div className="flex items-center gap-2 rounded-full border border-brand-500/25 bg-brand-500/10 px-4 py-2 shadow-glow-sm">
+            <Icon name="coins" size={16} className="text-brand-300" />
+            <span className="text-xs font-medium uppercase tracking-wide text-brand-300/80">Balance</span>
+            <AnimatedNumber
+              value={points}
+              format={formatPoints}
+              as="span"
+              className="text-sm font-bold text-brand-200"
+            />
+            <span className="text-xs font-medium text-brand-300/70">pts</span>
+          </div>
+        }
+      />
 
       {/* Self-imposed break banner */}
       {cooloffActive && (
@@ -58,34 +71,58 @@ export default function Markets() {
         </p>
       )}
 
-      {/* Category filter */}
-      <div className="flex flex-wrap gap-2">
-        {MARKET_CATEGORIES.map((c) => (
-          <button
-            key={c}
-            onClick={() => setCategory(c)}
-            className={[
-              'rounded-full px-3 py-1.5 text-sm transition-colors',
-              category === c
-                ? 'bg-brand-500 text-ink-900 font-semibold'
-                : 'bg-white/10 text-slate-300 hover:bg-white/15',
-            ].join(' ')}
-          >
-            {c}
-          </button>
-        ))}
+      {/* Category filter — toggle-button group, single-line scroller on mobile */}
+      <div
+        role="group"
+        aria-label="Filter markets by category"
+        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {MARKET_CATEGORIES.map((c) => {
+          const active = category === c
+          return (
+            <button
+              key={c}
+              aria-pressed={active}
+              onClick={() => setCategory(c)}
+              className={[
+                'shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-sm transition-all duration-200',
+                active
+                  ? 'bg-brand-500 font-semibold text-ink-950 shadow-glow-sm'
+                  : 'border border-white/10 bg-transparent text-slate-300 hover:border-brand-400/50 hover:bg-brand-500/[0.06] hover:text-brand-200',
+              ].join(' ')}
+            >
+              {c}
+            </button>
+          )
+        })}
       </div>
 
       {/* Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {visible.map((m) => (
-          <MarketCard
-            key={m.id}
-            market={m}
-            onPick={(market, outcome) => setPick({ market, outcome })}
+      {visible.length === 0 ? (
+        <Card padding="lg">
+          <EmptyState
+            icon="markets"
+            title={`No ${category} markets right now`}
+            body="Nothing live in this category yet. Check back soon, or browse another category — new markets open all the time."
+            action={
+              <Button size="sm" variant="outline" onClick={() => setCategory('All')}>
+                View all markets
+              </Button>
+            }
           />
-        ))}
-      </div>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {visible.map((m, i) => (
+            <Reveal key={m.id} delay={i * 60} className="h-full">
+              <MarketCard
+                market={m}
+                onPick={(market, outcome) => setPick({ market, outcome })}
+              />
+            </Reveal>
+          ))}
+        </div>
+      )}
 
       <BetModal
         open={Boolean(pick.market)}

@@ -105,7 +105,7 @@ export default function AccountCard() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@email.com"
-          className="w-full max-w-sm rounded-lg border border-white/10 bg-ink-900 p-2.5 text-slate-100 placeholder:text-slate-500 focus:border-brand-400"
+          className="input max-w-sm"
         />
         <input
           type="password"
@@ -115,13 +115,13 @@ export default function AccountCard() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password (min 6 chars)"
-          className="w-full max-w-sm rounded-lg border border-white/10 bg-ink-900 p-2.5 text-slate-100 placeholder:text-slate-500 focus:border-brand-400"
+          className="input max-w-sm"
         />
         {error && <p className="text-xs text-rose-300">{error}</p>}
         {notice && <p className="text-xs text-brand-300">{notice}</p>}
         <div className="flex items-center gap-3">
-          <Button type="submit" disabled={busy}>
-            {busy ? 'Working…' : mode === 'signup' ? 'Create account' : 'Sign in'}
+          <Button type="submit" loading={busy} disabled={busy}>
+            {mode === 'signup' ? 'Create account' : 'Sign in'}
           </Button>
           <button
             type="button"

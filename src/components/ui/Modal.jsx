@@ -8,8 +8,12 @@ import Icon from './Icon.jsx'
 const FOCUSABLE =
   'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
 
-export default function Modal({ open, onClose, title, children, maxWidth = 'max-w-lg' }) {
+export default function Modal({ open, onClose, title, ariaLabel, children, maxWidth = 'max-w-lg' }) {
   const panelRef = useRef(null)
+  // Read onClose through a ref so the focus/scroll effect can key on [open] only
+  // and never re-run (re-stealing focus) when a parent passes a fresh closure.
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     if (!open) return undefined
@@ -23,7 +27,7 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
 
     const onKey = (e) => {
       if (e.key === 'Escape') {
-        onClose?.()
+        onCloseRef.current?.()
         return
       }
       if (e.key !== 'Tab') return
@@ -51,16 +55,18 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
       // Restore focus to whatever opened the modal.
       previouslyFocused?.focus?.()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
+
+  const label = title || ariaLabel
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={title}
+      {...(label ? { 'aria-label': label } : {})}
     >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose} />
@@ -69,17 +75,17 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
         ref={panelRef}
         tabIndex={-1}
         className={[
-          'relative w-full surface p-6 shadow-pop animate-pop outline-none',
+          'relative w-full surface p-6 shadow-pop ring-1 ring-brand-500/10 animate-pop outline-none',
           maxWidth,
           'max-h-[90vh] overflow-y-auto',
         ].join(' ')}
       >
         {title ? (
-          <div className="mb-4 flex items-start justify-between gap-4">
-            <h2 className="text-lg font-bold text-slate-50">{title}</h2>
+          <div className="mb-4 flex items-start justify-between gap-4 border-b border-white/[0.07] pb-4">
+            <h2 className="font-display text-lg font-bold tracking-tightish text-slate-50">{title}</h2>
             <button
               onClick={onClose}
-              className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-slate-200"
+              className="-mr-1 -mt-1 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-slate-200"
               aria-label="Close"
             >
               <Icon name="x" size={18} />

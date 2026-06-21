@@ -159,7 +159,9 @@ export function reducer(state, action) {
   switch (action.type) {
     // --- Play-money betting -------------------------------------------------
     case 'PLACE_BET': {
-      const { marketId, outcomeId, outcomeLabel, stake, price, question } = action.payload
+      const { marketId, outcomeId, outcomeLabel, price, question } = action.payload
+      // Points are an integer currency — never let a fractional stake drift the balance.
+      const stake = Math.floor(Number(action.payload.stake) || 0)
       if (stake <= 0 || stake > state.points) return state // guard: no overdraw
       if (inCooloff(state)) return state // self-imposed break is active
       if (stake > stakeRemainingToday(state)) return state // self-imposed daily limit
@@ -342,7 +344,8 @@ export function reducer(state, action) {
 
     // Stake play points on a head-to-head pick against a friend (they "match").
     case 'CREATE_CHALLENGE': {
-      const { friend, marketId, question, outcomeId, outcomeLabel, stake, price } = action.payload
+      const { friend, marketId, question, outcomeId, outcomeLabel, price } = action.payload
+      const stake = Math.floor(Number(action.payload.stake) || 0)
       if (stake <= 0 || stake > state.points) return state
       if (inCooloff(state)) return state
       if (stake > stakeRemainingToday(state)) return state

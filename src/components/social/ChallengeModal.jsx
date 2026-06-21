@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import Modal from '../ui/Modal.jsx'
 import Button from '../ui/Button.jsx'
-import Badge from '../ui/Badge.jsx'
+import Avatar from '../ui/Avatar.jsx'
+import AnimatedNumber from '../ui/AnimatedNumber.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import { MARKETS } from '../../data/markets.js'
 import { formatPoints, formatCents, marketStatus } from '../../lib/format.js'
@@ -32,10 +33,12 @@ export default function ChallengeModal({ open, onClose, friend }) {
 
   const market = openMarkets.find((m) => m.id === marketId)
   const outcome = market?.outcomes.find((o) => o.id === outcomeId)
-  const numericStake = Number(stake) || 0
+  // Points are whole — floor any typed value so the balance never drifts.
+  const numericStake = Math.floor(Number(stake) || 0)
   const tooMuch = numericStake > points
   const overLimit = numericStake > stakeRemaining
   const valid = market && outcome && numericStake > 0 && !tooMuch && !cooloffActive && !overLimit
+  const maxStake = Math.max(0, Math.min(points, stakeRemaining))
 
   function confirm() {
     if (!valid) return
@@ -58,7 +61,7 @@ export default function ChallengeModal({ open, onClose, friend }) {
     <Modal open={open} onClose={onClose} title={`Challenge ${friend.name}`}>
       <div className="space-y-4">
         <div className="flex items-center gap-3 surface-muted p-3">
-          <span className="text-2xl" aria-hidden>{friend.avatar}</span>
+          <Avatar emoji={friend.avatar} size="md" />
           <div className="text-sm">
             <p className="font-semibold text-slate-100">{friend.name}</p>
             <p className="text-xs text-slate-500">Winner takes the matched pot · play points only</p>
@@ -89,7 +92,7 @@ export default function ChallengeModal({ open, onClose, friend }) {
                   setMarketId(e.target.value)
                   setOutcomeId('')
                 }}
-                className="w-full rounded-lg border border-white/10 bg-ink-900 p-2.5 text-sm text-slate-100 focus:border-brand-400"
+                className="input text-sm"
               >
                 {openMarkets.map((m) => (
                   <option key={m.id} value={m.id}>{m.question}</option>
@@ -128,20 +131,26 @@ export default function ChallengeModal({ open, onClose, friend }) {
               <input
                 type="number"
                 min="1"
+                step="1"
                 inputMode="numeric"
                 value={stake}
                 onChange={(e) => setStake(e.target.value)}
                 placeholder="Points to put up"
-                className="w-full rounded-lg border border-white/10 bg-ink-900 p-2.5 text-slate-100 placeholder:text-slate-500 focus:border-brand-400"
+                className="input"
               />
               {tooMuch && <p className="mt-1 text-xs text-rose-300">You only have {formatPoints(points)} points.</p>}
+              {!tooMuch && overLimit && Number.isFinite(stakeRemaining) && (
+                <p className="mt-1 text-xs text-amber-300">
+                  That exceeds your daily limit — {formatPoints(Math.max(0, stakeRemaining))} pts left today.
+                </p>
+              )}
               <div className="mt-2 flex flex-wrap gap-2">
                 {QUICK_STAKES.map((q) => (
                   <button
                     key={q}
                     onClick={() => setStake(String(q))}
-                    disabled={q > points}
-                    className="rounded-lg bg-white/[0.06] px-3 py-1.5 text-sm text-slate-200 hover:bg-white/[0.1] disabled:opacity-40"
+                    disabled={q > maxStake}
+                    className="rounded-lg bg-white/[0.06] px-3 py-1.5 text-sm text-slate-200 transition-transform hover:bg-white/[0.1] hover:scale-[1.03] active:scale-95 disabled:opacity-40 disabled:hover:scale-100"
                   >
                     {formatPoints(q)}
                   </button>
@@ -149,9 +158,16 @@ export default function ChallengeModal({ open, onClose, friend }) {
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg bg-ink-900 px-4 py-3">
+            <div className="flex items-center justify-between rounded-xl bg-ink-900 px-4 py-3 ring-1 ring-inset ring-brand-500/15">
               <span className="text-sm text-slate-400">Pot if you win</span>
-              <Badge tone="brand">{formatPoints(numericStake * 2)} pts</Badge>
+              <span className="flex items-baseline gap-1.5">
+                <AnimatedNumber
+                  value={numericStake * 2}
+                  format={formatPoints}
+                  className="font-display text-xl font-bold text-brand-300"
+                />
+                <span className="text-xs text-slate-500">pts</span>
+              </span>
             </div>
 
             <Button className="w-full" onClick={confirm} disabled={!valid}>

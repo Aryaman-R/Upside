@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import Button from '../ui/Button.jsx'
 import Icon from '../ui/Icon.jsx'
+import AnimatedNumber from '../ui/AnimatedNumber.jsx'
+import Avatar from '../ui/Avatar.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import { formatPoints, formatUSD } from '../../lib/format.js'
 
@@ -11,13 +13,13 @@ export default function TopBar() {
     useApp()
 
   return (
-    <header className="sticky top-0 z-30 -mx-4 mb-6 border-b border-white/[0.06] bg-ink-950/80 px-4 py-2.5 backdrop-blur-md md:-mx-8 md:px-8">
+    <header className="relative z-30 -mx-4 mb-6 border-b border-white/[0.06] bg-ink-950/80 px-4 py-2.5 backdrop-blur-md md:sticky md:top-0 md:-mx-8 md:px-8">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
         {/* Balance chips */}
         <div className="flex items-center gap-2">
-          <Chip icon="coins" label="Points" value={formatPoints(points)} />
-          <Chip icon="savings" label="Kept" value={formatUSD(savings.total)} tone="brand" />
-          <Chip icon="flame" label="Streak" value={streak} tone="amber" hideOnMobile />
+          <Chip icon="coins" label="Points" value={points} format={formatPoints} />
+          <Chip icon="savings" label="Kept" value={savings.total} format={formatUSD} tone="brand" />
+          <Chip icon="flame" label="Streak" value={streak} format={(n) => Math.round(n)} tone="amber" hideOnMobile />
         </div>
 
         {/* Actions */}
@@ -57,11 +59,11 @@ export default function TopBar() {
 
           <Link
             to="/settings"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-base transition-colors hover:bg-white/[0.08]"
+            className="rounded-full transition-transform hover:scale-105"
             title={`${user.name} · Settings`}
             aria-label="Profile and settings"
           >
-            <span aria-hidden>{user.avatar}</span>
+            <Avatar emoji={user.avatar} size="sm" />
           </Link>
         </div>
       </div>
@@ -69,7 +71,7 @@ export default function TopBar() {
   )
 }
 
-function Chip({ icon, label, value, tone = 'default', hideOnMobile = false }) {
+function Chip({ icon, label, value, format, tone = 'default', hideOnMobile = false }) {
   const TONES = {
     default: 'text-slate-100',
     brand: 'text-brand-300',
@@ -89,7 +91,7 @@ function Chip({ icon, label, value, tone = 'default', hideOnMobile = false }) {
     >
       <Icon name={icon} size={14} className={ICON_TONES[tone]} />
       <span className="text-[10px] uppercase tracking-wide text-slate-500">{label}</span>
-      <span className={['text-sm font-semibold tabular-nums', TONES[tone]].join(' ')}>{value}</span>
+      <AnimatedNumber value={value} format={format} className={['text-sm font-semibold', TONES[tone]].join(' ')} />
     </div>
   )
 }

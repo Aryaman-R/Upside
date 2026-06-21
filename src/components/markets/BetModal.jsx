@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Modal from '../ui/Modal.jsx'
 import Button from '../ui/Button.jsx'
 import Badge from '../ui/Badge.jsx'
+import Icon from '../ui/Icon.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import {
   formatPoints,
@@ -15,6 +17,16 @@ import {
 // Quick-stake chips so betting is one tap, like the apps this replaces — but
 // the "currency" is always play points.
 const QUICK_STAKES = [100, 250, 500, 1000]
+
+// A small, persistent reassurance chip that play points are never real money.
+function PlayMoneyChip() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-400">
+      <Icon name="shield" size={13} className="text-brand-300/80" />
+      Play points · no real money at stake
+    </span>
+  )
+}
 
 export default function BetModal({ open, onClose, market, outcome }) {
   const { points, dispatch, cooloffActive, stakeRemaining } = useApp()
@@ -32,11 +44,14 @@ export default function BetModal({ open, onClose, market, outcome }) {
 
   const status = marketStatus(market.closeDate)
   const closed = status === 'closed'
-  const numericStake = Number(stake) || 0
+  // Points are whole numbers — floor any typed value so the balance never drifts.
+  const numericStake = Math.floor(Number(stake) || 0)
   const tooMuch = numericStake > points
   const overLimit = numericStake > stakeRemaining
   const valid = numericStake > 0 && !tooMuch && !closed && !cooloffActive && !overLimit
   const payout = potentialPayout(numericStake, outcome.price)
+  // The most a single bet may stake right now (balance, capped by any daily limit).
+  const maxStake = Math.max(0, Math.min(points, stakeRemaining))
 
   function placeBet() {
     if (!valid) return
@@ -59,11 +74,14 @@ export default function BetModal({ open, onClose, market, outcome }) {
       <div className="space-y-4">
         <div className="surface-muted p-4">
           <p className="text-sm text-slate-300">{market.question}</p>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge tone="brand">{outcome.label}</Badge>
             <span className="text-xs text-slate-400">
-              {formatProbability(outcome.price)} implied ·{' '}
-              {priceToMultiplier(outcome.price).toFixed(2)}x payout
+              {formatProbability(outcome.price)} implied
+            </span>
+            <span className="text-xs text-slate-500">·</span>
+            <span className="text-xs text-slate-500">
+              {priceToMultiplier(outcome.price).toFixed(2)}x
             </span>
           </div>
           {status === 'closing-soon' && !closed && (
@@ -84,22 +102,36 @@ export default function BetModal({ open, onClose, market, outcome }) {
         )}
 
         {placed ? (
-          <div className="space-y-4">
-            <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 p-4 text-center">
-              <p className="text-brand-200">
-                Bet placed: <strong>{formatPoints(numericStake)}</strong> points on{' '}
+          <div className="animate-pop space-y-4">
+            <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 p-5 text-center">
+              <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/25">
+                <Icon name="check" size={22} strokeWidth={2.5} />
+              </span>
+              <p className="text-brand-100">
+                Bet placed: <strong className="tabular-nums">{formatPoints(numericStake)}</strong> points on{' '}
                 <strong>{outcome.label}</strong>.
               </p>
               <p className="mt-1 text-sm text-slate-400">
-                Potential return: {formatPoints(payout)} points. Track it in your Portfolio.
+                If this resolves your way, you’ll have{' '}
+                <span className="tabular-nums font-semibold text-slate-200">{formatPoints(payout)}</span> points.
               </p>
             </div>
-            <div className="rounded-lg bg-amber-500/10 p-3 text-center text-xs text-amber-200">
-              Reminder: these are points, not dollars. Nothing real is at stake. 🎮
+            <div className="flex justify-center">
+              <PlayMoneyChip />
             </div>
-            <Button className="w-full" onClick={onClose}>
-              Done
-            </Button>
+            <div className="space-y-2">
+              <Link
+                to="/portfolio"
+                onClick={onClose}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 shadow-glow-sm transition-all duration-150 ease-out hover:-translate-y-px hover:bg-brand-400 active:translate-y-0"
+              >
+                <Icon name="portfolio" size={16} />
+                Track it in your Portfolio
+              </Link>
+              <Button variant="ghost" fullWidth onClick={onClose}>
+                Done
+              </Button>
+            </div>
           </div>
         ) : (
           <>
@@ -113,11 +145,12 @@ export default function BetModal({ open, onClose, market, outcome }) {
               <input
                 type="number"
                 min="1"
+                step="1"
                 inputMode="numeric"
                 value={stake}
                 onChange={(e) => setStake(e.target.value)}
                 placeholder="Enter points to stake"
-                className="w-full rounded-xl border border-white/10 bg-ink-900/60 p-3 text-slate-100 placeholder:text-slate-500 focus:border-brand-400"
+                className="input"
               />
               {tooMuch && (
                 <p className="mt-1 text-xs text-rose-300">
@@ -134,34 +167,36 @@ export default function BetModal({ open, onClose, market, outcome }) {
                   <button
                     key={q}
                     onClick={() => setStake(String(q))}
-                    disabled={q > points}
+                    disabled={q > maxStake}
                     className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-200 hover:bg-white/15 disabled:opacity-40"
                   >
                     {formatPoints(q)}
                   </button>
                 ))}
                 <button
-                  onClick={() => setStake(String(points))}
-                  className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-200 hover:bg-white/15"
+                  onClick={() => setStake(String(maxStake))}
+                  disabled={maxStake <= 0}
+                  className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-200 hover:bg-white/15 disabled:opacity-40"
                 >
                   Max
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl bg-ink-900/60 px-4 py-3">
-              <span className="text-sm text-slate-400">Potential payout</span>
-              <span className="text-lg font-bold text-brand-300">
+            {/* Calm receipt — not a jackpot. */}
+            <div className="flex items-center justify-between rounded-xl border border-white/5 bg-ink-900/60 px-4 py-3">
+              <span className="text-sm text-slate-400">If this resolves your way</span>
+              <span className="tabular-nums font-semibold text-slate-100">
                 {formatPoints(payout)} pts
               </span>
             </div>
 
-            <Button className="w-full" onClick={placeBet} disabled={!valid}>
+            <Button fullWidth onClick={placeBet} disabled={!valid}>
               Confirm play-money bet
             </Button>
-            <p className="text-center text-[11px] text-slate-500">
-              No real money is involved. Points have no cash value.
-            </p>
+            <div className="flex justify-center">
+              <PlayMoneyChip />
+            </div>
           </>
         )}
       </div>

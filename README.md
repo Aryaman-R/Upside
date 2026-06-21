@@ -28,7 +28,7 @@ redirection** approach:
 2. **Redirect the money.** Whenever a real-money gambling impulse strikes, the
    app captures that dollar amount into a **"Money Kept"** tracker. The loss
    becomes a visible, accumulating win.
-3. **Interrupt the urge.** A always-available **"Feeling the urge?"** flow adds a
+3. **Interrupt the urge.** An always-available **"Take a pause"** flow adds a
    cooldown, a reflection prompt, a snapshot of money saved, and links to real
    help (1-800-GAMBLER and others).
 
@@ -50,7 +50,7 @@ the high-arousal reds and flashing wins of typical gambling UIs.
 | 🏆 **Leaderboard** | Mock players ranked by points, with **you** merged in and highlighted so you always see your standing. |
 | 🫂 **Friends & groups** | Add friends, form **groups** with a shared play-money standings board, and run friendly **head-to-head challenges** — stake play points on a pick, winner takes the matched pot. (Mock social graph; real multiplayer would need a backend.) |
 | 💚 **Money Kept (savings redirect)** | A running total of dollars *saved instead of bet*, a goal + progress bar, quick-add redirects, milestones, and a full history log. |
-| 🫧 **Urge-intervention flow** | A persistent "Feeling the urge?" button opens a 4-step flow: name the feeling → enforced cooldown timer → reflection journaling → redirect-to-savings → mood check + real support resources. |
+| 🫧 **Urge-intervention flow** | A persistent "Take a pause" button opens a 4-step flow: name the feeling → enforced cooldown timer → reflection journaling → redirect-to-savings → mood check + real support resources. |
 | 🏠 **Dashboard** | One overview tying it together: points balance, money kept, open positions, current streak/standing, daily-allowance claim, and a safety reminder. |
 | 📊 **Insights** | Your progress visualized — cumulative Money Kept over time, play win-rate, and before/after mood shifts from the urge flow, plus a live engagement streak. |
 | 👋 **Onboarding & profile** | A first-run explainer of the harm-reduction philosophy, plus name/avatar and a self-set **daily play allowance**. Editable anytime in **Settings**. |

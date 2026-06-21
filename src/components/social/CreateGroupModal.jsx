@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Modal from '../ui/Modal.jsx'
 import Button from '../ui/Button.jsx'
+import Avatar from '../ui/Avatar.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import { GROUP_EMOJI } from '../../data/social.js'
 
@@ -39,22 +40,26 @@ export default function CreateGroupModal({ open, onClose }) {
             onChange={(e) => setName(e.target.value)}
             maxLength={28}
             placeholder="e.g. Sunday Squad"
-            className="w-full rounded-lg border border-white/10 bg-ink-900 p-2.5 text-slate-100 placeholder:text-slate-500 focus:border-brand-400"
+            className="input"
           />
         </div>
 
         <div>
           <p className="mb-2 text-sm font-medium text-slate-200">Icon</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-8 gap-2">
             {GROUP_EMOJI.map((e) => (
               <button
                 key={e}
                 onClick={() => setEmoji(e)}
                 className={[
-                  'flex h-10 w-10 items-center justify-center rounded-lg text-xl transition-colors',
-                  emoji === e ? 'bg-brand-500/20 ring-2 ring-brand-400' : 'bg-white/[0.04] hover:bg-white/[0.08]',
+                  'flex aspect-square items-center justify-center rounded-lg text-xl transition-all duration-150',
+                  'hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40',
+                  emoji === e
+                    ? 'bg-brand-500/20 ring-2 ring-brand-400 shadow-glow-sm scale-105'
+                    : 'bg-white/[0.04] hover:bg-white/[0.08]',
                 ].join(' ')}
                 aria-label={`Choose ${e}`}
+                aria-pressed={emoji === e}
               >
                 <span aria-hidden>{e}</span>
               </button>
@@ -78,10 +83,12 @@ export default function CreateGroupModal({ open, onClose }) {
                     onClick={() => toggleMember(f.id)}
                     className={[
                       'flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors',
+                      'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40',
                       selected ? 'border-brand-400/50 bg-brand-500/[0.1]' : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]',
                     ].join(' ')}
+                    aria-pressed={selected}
                   >
-                    <span className="text-xl" aria-hidden>{f.avatar}</span>
+                    <Avatar emoji={f.avatar} size="sm" />
                     <span className="flex-1 text-sm text-slate-200">{f.name}</span>
                     <span
                       className={[

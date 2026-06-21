@@ -3,11 +3,26 @@ import Card from '../components/ui/Card.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import Button from '../components/ui/Button.jsx'
 import Icon from '../components/ui/Icon.jsx'
+import Avatar from '../components/ui/Avatar.jsx'
+import PageHeader from '../components/ui/PageHeader.jsx'
+import AnimatedNumber from '../components/ui/AnimatedNumber.jsx'
+import Reveal from '../components/ui/Reveal.jsx'
+import EmptyState from '../components/ui/EmptyState.jsx'
 import ChallengeModal from '../components/social/ChallengeModal.jsx'
 import CreateGroupModal from '../components/social/CreateGroupModal.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { SUGGESTED_FRIENDS, findPerson } from '../data/social.js'
 import { formatPoints, formatDate, formatProbability } from '../lib/format.js'
+
+// Small amber flame pill reused for streaks.
+function StreakPill({ days }) {
+  if (!days) return null
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/12 px-2 py-0.5 text-[11px] font-medium text-amber-200">
+      <Icon name="flame" size={11} /> {days}d
+    </span>
+  )
+}
 
 export default function Social() {
   const { user, points, social, dispatch } = useApp()
@@ -35,44 +50,66 @@ export default function Social() {
     return [me, ...members].sort((a, b) => b.points - a.points)
   }
 
-  return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tightish text-slate-50">Friends</h1>
-          <p className="text-sm text-slate-400">
-            Play with friends, form groups, and run friendly challenges — all in play points.
-          </p>
-        </div>
-        <Button variant="secondary" size="sm" onClick={() => setGroupOpen(true)}>
-          <Icon name="users" size={15} /> New group
-        </Button>
-      </header>
+  const newGroupButton = (
+    <Button variant="secondary" size="sm" onClick={() => setGroupOpen(true)}>
+      <Icon name="users" size={15} /> New group
+    </Button>
+  )
 
-      {/* Active challenges -------------------------------------------------- */}
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Play together"
+        title="Friends"
+        subtitle="Play with friends, form groups, and run friendly challenges — all in play points."
+        action={newGroupButton}
+      />
+
+      {/* Active challenges — VS cards -------------------------------------- */}
       {openChallenges.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Active challenges</h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            {openChallenges.map((c) => (
-              <Card key={c.id} className="space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Icon name="swords" size={16} className="text-slate-500" />
-                    <span className="text-sm font-semibold text-slate-100">vs {c.friendName}</span>
-                    <span className="text-lg" aria-hidden>{c.friendAvatar}</span>
+            {openChallenges.map((c, i) => (
+              <Reveal key={c.id} delay={i * 60}>
+                <Card variant="glow" className="space-y-4">
+                  {/* VS header: you vs friend */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
+                      <Avatar emoji={user.avatar} size="md" ring />
+                      <span className="max-w-full truncate text-xs font-medium text-brand-200">You</span>
+                    </div>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-[11px] font-bold uppercase tracking-wide text-slate-300 ring-1 ring-white/10">
+                      VS
+                    </span>
+                    <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
+                      <Avatar emoji={c.friendAvatar} size="md" />
+                      <span className="max-w-full truncate text-xs font-medium text-slate-300">{c.friendName}</span>
+                    </div>
                   </div>
-                  <Badge tone="open">{formatPoints(c.stake * 2)} pot</Badge>
-                </div>
-                <p className="text-sm text-slate-300">{c.question}</p>
-                <p className="text-xs text-slate-500">
-                  Your pick: <span className="text-slate-300">{c.outcomeLabel}</span> · {formatProbability(c.price)} ·{' '}
-                  staked {formatPoints(c.stake)} pts
-                </p>
-                <Button size="sm" variant="outline" onClick={() => settle(c)}>
-                  Simulate result
-                </Button>
-              </Card>
+
+                  {/* Pot hero figure */}
+                  <div className="rounded-xl bg-ink-900/60 py-3 text-center ring-1 ring-inset ring-white/[0.04]">
+                    <p className="text-[11px] uppercase tracking-wide text-slate-500">Pot if you win</p>
+                    <AnimatedNumber
+                      value={c.stake * 2}
+                      format={formatPoints}
+                      as="p"
+                      className="font-display text-2xl font-bold text-brand-300"
+                    />
+                    <p className="text-[11px] text-slate-500">pts</p>
+                  </div>
+
+                  <p className="text-sm text-slate-300">{c.question}</p>
+                  <p className="text-xs text-slate-500">
+                    Your pick: <span className="text-slate-300">{c.outcomeLabel}</span> · {formatProbability(c.price)} ·{' '}
+                    staked {formatPoints(c.stake)} pts
+                  </p>
+                  <Button variant="primary" size="sm" fullWidth onClick={() => settle(c)}>
+                    Reveal result
+                  </Button>
+                </Card>
+              </Reveal>
             ))}
           </div>
         </section>
@@ -84,38 +121,43 @@ export default function Social() {
           Your friends {social.friends.length > 0 && <span className="text-slate-600">· {social.friends.length}</span>}
         </h2>
         {social.friends.length === 0 ? (
-          <Card className="text-center text-sm text-slate-400">
-            No friends yet — add a few below to start challenging.
+          <Card padding="none">
+            <EmptyState
+              icon="users"
+              title="No friends yet"
+              body="Add a few players below to start running friendly, play-money challenges."
+            />
           </Card>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {social.friends.map((f) => (
-              <Card key={f.id} className="flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.05] text-xl">
-                    <span aria-hidden>{f.avatar}</span>
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-100">{f.name}</p>
-                    <p className="text-xs text-slate-500">
-                      {formatPoints(f.points)} pts{f.streak > 0 ? ` · ${f.streak}d streak` : ''}
-                    </p>
+            {social.friends.map((f, i) => (
+              <Reveal key={f.id} delay={i * 50}>
+                <Card variant="interactive" className="flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar emoji={f.avatar} size="md" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-100">{f.name}</p>
+                      <p className="flex items-center gap-2 text-xs text-slate-500">
+                        <span>{formatPoints(f.points)} pts</span>
+                        <StreakPill days={f.streak} />
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" className="flex-1" onClick={() => setChallengeFriend(f)}>
-                    <Icon name="swords" size={14} /> Challenge
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => dispatch({ type: 'REMOVE_FRIEND', payload: { id: f.id } })}
-                    aria-label={`Remove ${f.name}`}
-                  >
-                    <Icon name="x" size={15} />
-                  </Button>
-                </div>
-              </Card>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="flex-1" onClick={() => setChallengeFriend(f)}>
+                      <Icon name="swords" size={14} /> Challenge
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => dispatch({ type: 'REMOVE_FRIEND', payload: { id: f.id } })}
+                      aria-label={`Remove ${f.name}`}
+                    >
+                      <Icon name="x" size={15} />
+                    </Button>
+                  </div>
+                </Card>
+              </Reveal>
             ))}
           </div>
         )}
@@ -125,13 +167,16 @@ export default function Social() {
       {suggestions.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Add friends</h2>
-          <Card className="divide-y divide-white/[0.06] p-0">
+          <Card padding="none" className="divide-y divide-white/[0.06]">
             {suggestions.map((p) => (
               <div key={p.id} className="flex items-center gap-3 px-4 py-2.5">
-                <span className="text-xl" aria-hidden>{p.avatar}</span>
+                <Avatar emoji={p.avatar} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-slate-100">{p.name}</p>
-                  <p className="text-xs text-slate-500">{formatPoints(p.points)} pts</p>
+                  <p className="flex items-center gap-2 text-xs text-slate-500">
+                    <span>{formatPoints(p.points)} pts</span>
+                    <StreakPill days={p.streak} />
+                  </p>
                 </div>
                 <Button
                   size="sm"
@@ -150,13 +195,15 @@ export default function Social() {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Groups</h2>
-          <button onClick={() => setGroupOpen(true)} className="text-sm text-brand-300 hover:underline">
-            + New group
-          </button>
         </div>
         {social.groups.length === 0 ? (
-          <Card className="text-center text-sm text-slate-400">
-            No groups yet. Create one to track a shared play-money leaderboard with friends.
+          <Card padding="none">
+            <EmptyState
+              icon="users"
+              title="No groups yet"
+              body="Create one to track a shared play-money leaderboard with friends."
+              action={newGroupButton}
+            />
           </Card>
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
@@ -166,7 +213,7 @@ export default function Social() {
                 <Card key={g.id} className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.05] text-xl">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.05] text-xl ring-1 ring-white/10">
                         <span aria-hidden>{g.emoji}</span>
                       </span>
                       <div>
@@ -177,6 +224,7 @@ export default function Social() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      aria-label={`Leave ${g.name}`}
                       onClick={() => dispatch({ type: 'LEAVE_GROUP', payload: { id: g.id } })}
                     >
                       Leave
@@ -184,9 +232,15 @@ export default function Social() {
                   </div>
                   <div className="surface-muted divide-y divide-white/[0.05]">
                     {standings.map((m, i) => (
-                      <div key={m.id} className="flex items-center gap-3 px-3 py-2">
-                        <span className="w-4 text-center text-xs font-bold text-slate-500">{i + 1}</span>
-                        <span className="text-base" aria-hidden>{m.avatar}</span>
+                      <div
+                        key={m.id}
+                        className={[
+                          'flex items-center gap-3 px-3 py-2',
+                          m.isMe ? 'bg-brand-500/[0.08]' : '',
+                        ].join(' ')}
+                      >
+                        <span className="w-4 text-center text-xs font-bold tabular-nums text-slate-500">{i + 1}</span>
+                        <Avatar emoji={m.avatar} size="xs" ring={m.isMe} />
                         <span className={['flex-1 truncate text-sm', m.isMe ? 'font-semibold text-brand-200' : 'text-slate-200'].join(' ')}>
                           {m.name}{m.isMe && ' (you)'}
                         </span>
@@ -206,20 +260,31 @@ export default function Social() {
       {settledChallenges.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Challenge history</h2>
-          <Card className="divide-y divide-white/[0.06] p-0">
-            {settledChallenges.map((c) => (
-              <div key={c.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm text-slate-200">vs {c.friendName} · {c.outcomeLabel}</p>
-                  <p className="truncate text-xs text-slate-500">{c.question}</p>
+          <Card padding="none" className="divide-y divide-white/[0.06]">
+            {settledChallenges.map((c) => {
+              const won = c.status === 'won'
+              return (
+                <div
+                  key={c.id}
+                  className={[
+                    'flex items-center justify-between gap-3 px-4 py-3',
+                    won ? 'animate-pop bg-brand-500/[0.06]' : '',
+                  ].join(' ')}
+                >
+                  <div className="min-w-0">
+                    <p className={['truncate text-sm', won ? 'text-slate-200' : 'text-slate-400'].join(' ')}>
+                      vs {c.friendName} · {c.outcomeLabel}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">{c.question}</p>
+                  </div>
+                  {won ? (
+                    <Badge tone="win" className="shadow-glow-sm">+{formatPoints(c.payout)} pts</Badge>
+                  ) : (
+                    <Badge tone="loss">−{formatPoints(c.stake)} pts</Badge>
+                  )}
                 </div>
-                {c.status === 'won' ? (
-                  <Badge tone="win">+{formatPoints(c.payout)} pts</Badge>
-                ) : (
-                  <Badge tone="loss">−{formatPoints(c.stake)} pts</Badge>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </Card>
         </section>
       )}

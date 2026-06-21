@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Modal from '../ui/Modal.jsx'
 import Button from '../ui/Button.jsx'
 import ProgressBar from '../ui/ProgressBar.jsx'
+import AnimatedNumber from '../ui/AnimatedNumber.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import { MOOD_TAGS, pickPrompt } from '../../data/prompts.js'
 import { SUPPORT_RESOURCES } from '../../data/resources.js'
@@ -52,6 +53,18 @@ export default function UrgeModal({ open, onClose }) {
     return () => clearTimeout(t)
   }, [open, step, secondsLeft])
 
+  // Move focus to the new step's first control on each step change so keyboard /
+  // screen-reader users follow the flow (Modal handles focus-in on open).
+  const stepRef = useRef(null)
+  const firstRun = useRef(true)
+  useEffect(() => {
+    if (firstRun.current) {
+      firstRun.current = false
+      return
+    }
+    stepRef.current?.querySelector('input, textarea, select, button')?.focus?.()
+  }, [step])
+
   const cooldownDone = secondsLeft <= 0
 
   function finish() {
@@ -76,7 +89,7 @@ export default function UrgeModal({ open, onClose }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Feeling the urge? Let’s pause together.">
+    <Modal open={open} onClose={onClose} title="Let’s pause together.">
       {/* Step indicator */}
       <div className="mb-5 flex items-center gap-2">
         {STEPS.map((s, i) => (
@@ -90,6 +103,7 @@ export default function UrgeModal({ open, onClose }) {
         ))}
       </div>
 
+      <div ref={stepRef}>
       {/* STEP 1 — Breathe / cooldown ---------------------------------------- */}
       {step === 0 && (
         <div className="space-y-5 animate-fade-in">
@@ -121,16 +135,32 @@ export default function UrgeModal({ open, onClose }) {
             </div>
           </div>
 
-          <div className="surface-muted flex flex-col items-center gap-3 p-6">
-            <span className="text-5xl font-bold tabular-nums text-brand-300">
-              {formatClock(secondsLeft)}
-            </span>
-            <ProgressBar value={1 - secondsLeft / COOLDOWN_SECONDS} />
-            <p className="text-center text-sm text-slate-400">
-              {cooldownDone
-                ? 'Nicely done. The wave passed — continue when you’re ready.'
-                : 'Breathe in… and out. Let the timer run.'}
-            </p>
+          <div className="surface-muted flex flex-col items-center gap-5 p-7">
+            <div className="relative flex h-44 w-44 items-center justify-center">
+              {/* Soft outer halo — lagged a beat so the glow trails the core */}
+              <span
+                className="absolute inset-0 rounded-full bg-brand-500/15 blur-2xl animate-breathe"
+                style={{ animationDelay: '-2s' }}
+                aria-hidden
+              />
+              {/* The breathing orb */}
+              <span
+                className="absolute inset-2 rounded-full bg-gradient-to-br from-brand-400/40 via-brand-500/25 to-brand-600/30 ring-1 ring-brand-400/30 shadow-glow animate-breathe"
+                aria-hidden
+              />
+              {/* Centered timer */}
+              <span className="relative text-4xl font-bold tabular-nums text-brand-200">
+                {formatClock(secondsLeft)}
+              </span>
+            </div>
+            <div className="w-full space-y-2">
+              <ProgressBar value={1 - secondsLeft / COOLDOWN_SECONDS} tone="brand" glow />
+              <p className="text-center text-sm text-slate-400">
+                {cooldownDone
+                  ? 'Nicely done. The wave passed — continue when you’re ready.'
+                  : 'Breathe in… and out. Let the timer run.'}
+              </p>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2">
@@ -156,7 +186,8 @@ export default function UrgeModal({ open, onClose }) {
             onChange={(e) => setReflection(e.target.value)}
             rows={5}
             placeholder="Write as much or as little as you want. This stays on your device."
-            className="w-full rounded-xl border border-white/10 bg-ink-900/60 p-3 text-slate-100 placeholder:text-slate-500 focus:border-brand-400"
+            aria-label="Your reflection"
+            className="input w-full"
           />
           <div className="flex justify-between gap-2">
             <Button variant="ghost" onClick={() => setStep(0)}>
@@ -172,9 +203,12 @@ export default function UrgeModal({ open, onClose }) {
         <div className="space-y-4 animate-fade-in">
           <div className="surface-muted p-5 text-center">
             <p className="text-sm text-slate-400">You’ve already kept</p>
-            <p className="text-4xl font-extrabold text-brand-300">
-              {formatUSD(savings.total)}
-            </p>
+            <AnimatedNumber
+              value={savings.total}
+              format={formatUSD}
+              as="p"
+              className="text-4xl font-extrabold text-gradient-brand"
+            />
             <p className="mt-1 text-sm text-slate-400">out of the casino’s hands.</p>
           </div>
 
@@ -189,9 +223,15 @@ export default function UrgeModal({ open, onClose }) {
               Added to your savings. That’s real money you still have. 💚
             </div>
           ) : (
-            <div className="flex gap-2">
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleRedirect()
+              }}
+            >
               <div className="relative flex-1">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-400">
                   $
                 </span>
                 <input
@@ -201,11 +241,12 @@ export default function UrgeModal({ open, onClose }) {
                   value={redirectAmount}
                   onChange={(e) => setRedirectAmount(e.target.value)}
                   placeholder="25"
-                  className="w-full rounded-xl border border-white/10 bg-ink-900/60 py-2.5 pl-7 pr-3 text-slate-100 placeholder:text-slate-500 focus:border-brand-400"
+                  aria-label="Amount to redirect in dollars"
+                  className="input w-full pl-7"
                 />
               </div>
-              <Button onClick={handleRedirect}>Keep it</Button>
-            </div>
+              <Button type="submit">Keep it</Button>
+            </form>
           )}
 
           <div className="flex justify-between gap-2">
@@ -272,6 +313,7 @@ export default function UrgeModal({ open, onClose }) {
           </div>
         </div>
       )}
+      </div>
     </Modal>
   )
 }

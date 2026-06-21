@@ -76,7 +76,7 @@ npm run preview    # serves dist/ at http://localhost:4173
 3. **Leaderboard** → see where your points rank you against the mock field.
 4. **Money Kept** → log a real-money impulse you redirected, watch the total +
    goal progress grow.
-5. **Feeling the urge?** (sidebar button, or floating button on mobile) → walk
+5. **Take a pause** (sidebar button, or central button on mobile) → walk
    through the cooldown → reflection → redirect-to-savings → support resources.
 
 > All points are play-only and have no cash value. No real money is ever

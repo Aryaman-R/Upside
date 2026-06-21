@@ -4,6 +4,8 @@ import Card from '../components/ui/Card.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import Button from '../components/ui/Button.jsx'
 import StatTile from '../components/ui/StatTile.jsx'
+import PageHeader from '../components/ui/PageHeader.jsx'
+import EmptyState from '../components/ui/EmptyState.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import {
   formatPoints,
@@ -60,18 +62,24 @@ export default function Portfolio() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-extrabold text-slate-50">Portfolio</h1>
-        <p className="text-sm text-slate-400">
-          Your open predictions and settled history — all in play points.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Play points"
+        title="Portfolio"
+        subtitle="Your open predictions and settled history — every figure is play points, never cash."
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Open bets" value={openPositions.length} icon="portfolio" />
-        <StatTile label="At stake" value={`${formatPoints(pointsAtStake)} pts`} icon="clock" />
-        <StatTile label="Settled" value={settledPositions.length} icon="check" />
-        <StatTile label="Total bets" value={positions.length} icon="insights" />
+        <StatTile label="Open bets" value={openPositions.length} icon="portfolio" animate />
+        <StatTile
+          label="At stake"
+          value={pointsAtStake}
+          sub="points in play"
+          icon="clock"
+          animate
+          format={(n) => `${formatPoints(n)} pts`}
+        />
+        <StatTile label="Settled" value={settledPositions.length} icon="check" animate />
+        <StatTile label="Total bets" value={positions.length} icon="insights" animate />
       </div>
 
       {/* Open positions ----------------------------------------------------- */}
@@ -86,58 +94,66 @@ export default function Portfolio() {
         </div>
 
         {openPositions.length === 0 ? (
-          <Card className="text-center">
-            <p className="text-slate-300">No open positions yet.</p>
-            <Link to="/markets" className="mt-2 inline-block text-brand-300 hover:underline">
-              Browse markets →
-            </Link>
+          <Card padding="none">
+            <EmptyState
+              icon="portfolio"
+              title="No open positions yet"
+              body="Place a play-points prediction and it’ll show up here, ready to settle."
+              action={
+                <Link to="/markets">
+                  <Button size="sm" variant="outline">
+                    Browse markets
+                  </Button>
+                </Link>
+              }
+            />
           </Card>
         ) : (
           Object.entries(openByMarket).map(([marketId, group]) => {
             const isClosed = closedMarketIds.includes(marketId)
             return (
-            <Card key={marketId} className="space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-100">{group[0].question}</p>
-                  {isClosed && (
-                    <span className="mt-1 inline-block">
-                      <Badge tone="warn">Closed · ready to settle</Badge>
-                    </span>
-                  )}
-                </div>
-                <Button
-                  size="sm"
-                  variant={isClosed ? 'primary' : 'outline'}
-                  onClick={() => settleMarket(marketId)}
-                >
-                  {isClosed ? 'Settle result' : 'Simulate result'}
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {group.map((pos) => (
-                  <div
-                    key={pos.id}
-                    className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2 text-sm"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Badge tone="open">{pos.outcomeLabel}</Badge>
-                      <span className="text-slate-400">
-                        {formatProbability(pos.price)} · {formatDate(pos.placedAt)}
+              <Card key={marketId} variant="interactive" className="space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-100">{group[0].question}</p>
+                    {isClosed && (
+                      <span className="mt-1 inline-block">
+                        <Badge tone="warn">Closed · ready to settle</Badge>
                       </span>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-slate-100">
-                        {formatPoints(pos.stake)} pts
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        → {formatPoints(potentialPayout(pos.stake, pos.price))} if it hits
-                      </p>
-                    </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            </Card>
+                  <Button
+                    size="sm"
+                    variant={isClosed ? 'primary' : 'outline'}
+                    onClick={() => settleMarket(marketId)}
+                  >
+                    {isClosed ? 'Settle result' : 'Simulate result'}
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {group.map((pos) => (
+                    <div
+                      key={pos.id}
+                      className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2 text-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge tone="open">{pos.outcomeLabel}</Badge>
+                        <span className="text-slate-400">
+                          {formatProbability(pos.price)} · {formatDate(pos.placedAt)}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold tabular-nums text-slate-100">
+                          {formatPoints(pos.stake)} pts
+                        </p>
+                        <p className="text-xs tabular-nums text-slate-400">
+                          → {formatPoints(potentialPayout(pos.stake, pos.price))} if it hits
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
             )
           })
         )}
@@ -147,23 +163,51 @@ export default function Portfolio() {
       {settledPositions.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-lg font-bold text-slate-100">Settled history</h2>
-          <Card className="divide-y divide-white/5 p-0">
-            {settledPositions.map((pos) => (
-              <div key={pos.id} className="flex items-center justify-between gap-3 px-5 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm text-slate-200">{pos.question}</p>
-                  <p className="text-xs text-slate-500">
-                    {pos.outcomeLabel} · staked {formatPoints(pos.stake)} pts ·{' '}
-                    {formatDate(pos.placedAt)}
-                  </p>
-                </div>
-                {pos.status === 'won' ? (
-                  <Badge tone="win">+{formatPoints(pos.payout)} pts</Badge>
-                ) : (
-                  <Badge tone="loss">−{formatPoints(pos.stake)} pts</Badge>
-                )}
-              </div>
-            ))}
+          <Card padding="none" className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/5 text-[11px] uppercase tracking-wide text-slate-500">
+                    <th className="px-5 py-3 text-left font-medium">Market</th>
+                    <th className="px-3 py-3 text-left font-medium">Pick</th>
+                    <th className="px-3 py-3 text-right font-medium">Stake</th>
+                    <th className="px-5 py-3 text-right font-medium">Result</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {settledPositions.map((pos) => {
+                    const won = pos.status === 'won'
+                    return (
+                      <tr key={pos.id} className="transition-colors hover:bg-white/[0.03]">
+                        <td className="max-w-0 px-5 py-3">
+                          <p className="truncate text-slate-200">{pos.question}</p>
+                          <p className="text-xs text-slate-500">{formatDate(pos.placedAt)}</p>
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="text-slate-300">{pos.outcomeLabel}</span>
+                        </td>
+                        <td className="px-3 py-3 text-right tabular-nums text-slate-400">
+                          {formatPoints(pos.stake)} pts
+                        </td>
+                        {/* Net profit/loss vs. the stake — symmetric so wins
+                            aren't overstated by showing gross payout. */}
+                        <td className="px-5 py-3 text-right">
+                          {won ? (
+                            <span className="font-semibold tabular-nums text-emerald-300">
+                              +{formatPoints(Math.max(0, pos.payout - pos.stake))} pts
+                            </span>
+                          ) : (
+                            <span className="font-semibold tabular-nums text-rose-300">
+                              −{formatPoints(pos.stake)} pts
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </Card>
         </section>
       )}

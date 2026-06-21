@@ -18,15 +18,16 @@ export default {
           800: '#330961',
           900: '#210641',
         },
-        // Surface scale — violet-tinted darks anchored on "Deep Violet" (#100719).
+        // Surface scale — near-black neutrals (black base) so the purple accents
+        // pop. Base background is true black; surfaces step up subtly.
         ink: {
-          950: '#0a0411',
-          900: '#100719', // Deep Violet — base background
-          850: '#160b22',
-          800: '#1d0f2d',
-          750: '#261541',
-          700: '#321d54',
-          600: '#43296e',
+          950: '#000000', // true black — base background
+          900: '#0a0a0c',
+          850: '#0f0f12',
+          800: '#151518',
+          750: '#1c1c20',
+          700: '#26262b',
+          600: '#343439',
         },
         // Electric-blue secondary from the brand sheet, for subtle accents.
         electric: '#296ece',

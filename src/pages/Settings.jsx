@@ -16,6 +16,25 @@ const COOLOFF_OPTIONS = [
   { label: '1 week', hours: 168 },
 ]
 
+// Trigger a client-side file download from in-memory content.
+function downloadBlob(filename, content, type) {
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+// Escape a value for a CSV cell.
+function csvCell(v) {
+  const s = String(v ?? '')
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
 // Build the persistable slice of state for export (omits functions/derived).
 function exportableState(ctx) {
   const {
@@ -45,18 +64,19 @@ export default function Settings() {
     setTimeout(() => setSavedFlash(false), 1800)
   }
 
+  const today = new Date().toISOString().slice(0, 10)
+
   function exportData() {
-    const blob = new Blob([JSON.stringify(exportableState(ctx), null, 2)], {
-      type: 'application/json',
-    })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `upside-data-${new Date().toISOString().slice(0, 10)}.json`
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
+    downloadBlob(`upside-data-${today}.json`, JSON.stringify(exportableState(ctx), null, 2), 'application/json')
+  }
+
+  function exportJournalCsv() {
+    const header = ['date', 'prompt', 'reflection', 'mood_before', 'mood_after', 'money_kept_at_time']
+    const rows = [header, ...ctx.journal.map((j) => [
+      j.createdAt, j.prompt, j.reflection, j.moodBefore || '', j.moodAfter || '', j.savedSnapshot,
+    ])]
+    const csv = rows.map((r) => r.map(csvCell).join(',')).join('\n')
+    downloadBlob(`upside-journal-${today}.csv`, csv, 'text/csv')
   }
 
   function resetProgress() {
@@ -224,6 +244,9 @@ export default function Settings() {
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={exportData}>
             <Icon name="download" size={15} /> Export my data (JSON)
+          </Button>
+          <Button variant="secondary" onClick={exportJournalCsv} disabled={ctx.journal.length === 0}>
+            <Icon name="download" size={15} /> Export journal (CSV)
           </Button>
           {!confirmReset ? (
             <Button variant="outline" onClick={() => setConfirmReset(true)}>

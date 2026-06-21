@@ -10,6 +10,7 @@ import {
   formatDate,
   formatProbability,
   potentialPayout,
+  isMarketClosed,
 } from '../lib/format.js'
 import { getMarketById } from '../data/markets.js'
 
@@ -47,6 +48,16 @@ export default function Portfolio() {
     })
   }
 
+  // Markets whose close date has passed are "ready to settle".
+  const closedMarketIds = Object.keys(openByMarket).filter((id) => {
+    const m = getMarketById(id)
+    return m && isMarketClosed(m.closeDate)
+  })
+
+  function settleAllClosed() {
+    closedMarketIds.forEach(settleMarket)
+  }
+
   return (
     <div className="space-y-6">
       <header>
@@ -65,7 +76,14 @@ export default function Portfolio() {
 
       {/* Open positions ----------------------------------------------------- */}
       <section className="space-y-3">
-        <h2 className="text-lg font-bold text-slate-100">Open positions</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-slate-100">Open positions</h2>
+          {closedMarketIds.length > 0 && (
+            <Button size="sm" onClick={settleAllClosed}>
+              Settle all closed ({closedMarketIds.length})
+            </Button>
+          )}
+        </div>
 
         {openPositions.length === 0 ? (
           <Card className="text-center">
@@ -75,12 +93,25 @@ export default function Portfolio() {
             </Link>
           </Card>
         ) : (
-          Object.entries(openByMarket).map(([marketId, group]) => (
+          Object.entries(openByMarket).map(([marketId, group]) => {
+            const isClosed = closedMarketIds.includes(marketId)
+            return (
             <Card key={marketId} className="space-y-3">
               <div className="flex items-start justify-between gap-3">
-                <p className="text-sm font-medium text-slate-100">{group[0].question}</p>
-                <Button size="sm" variant="outline" onClick={() => settleMarket(marketId)}>
-                  Simulate result
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-100">{group[0].question}</p>
+                  {isClosed && (
+                    <span className="mt-1 inline-block">
+                      <Badge tone="warn">Closed · ready to settle</Badge>
+                    </span>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant={isClosed ? 'primary' : 'outline'}
+                  onClick={() => settleMarket(marketId)}
+                >
+                  {isClosed ? 'Settle result' : 'Simulate result'}
                 </Button>
               </div>
               <div className="space-y-2">
@@ -107,7 +138,8 @@ export default function Portfolio() {
                 ))}
               </div>
             </Card>
-          ))
+            )
+          })
         )}
       </section>
 

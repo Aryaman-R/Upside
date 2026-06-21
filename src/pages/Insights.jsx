@@ -8,7 +8,10 @@ import BarChart from '../components/ui/BarChart.jsx'
 import Icon from '../components/ui/Icon.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { MOOD_TAGS } from '../data/prompts.js'
-import { formatUSD, formatPoints } from '../lib/format.js'
+import { formatUSD, formatPoints, formatDateTime } from '../lib/format.js'
+
+const MOOD_BY_ID = Object.fromEntries(MOOD_TAGS.map((m) => [m.id, `${m.emoji} ${m.label}`]))
+const moodLabel = (id) => (id ? MOOD_BY_ID[id] || id : '—')
 
 // Insights ties the behavioral loop together: progress you can see reinforces
 // the harm-reduction habit. All derived locally from existing state.
@@ -125,6 +128,33 @@ export default function Insights() {
           <BarChart data={moodCounts.after} tone="brand" emptyLabel="Complete an urge flow to see the shift." />
         </Card>
       </div>
+
+      {/* Recent reflections (urge journal) */}
+      {journal.length > 0 && (
+        <Card className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-100">Recent reflections</h2>
+            <Badge tone="neutral">{journal.length} logged</Badge>
+          </div>
+          <ul className="space-y-3">
+            {journal.slice(0, 6).map((j) => (
+              <li key={j.id} className="surface-muted p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-slate-500">{formatDateTime(j.createdAt)}</p>
+                  {(j.moodBefore || j.moodAfter) && (
+                    <p className="text-xs text-slate-400">
+                      {moodLabel(j.moodBefore)} → {moodLabel(j.moodAfter)}
+                    </p>
+                  )}
+                </div>
+                <p className="mt-1 text-sm text-slate-300">{j.prompt}</p>
+                {j.reflection && <p className="mt-1 text-sm italic text-slate-400">“{j.reflection}”</p>}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-slate-600">Stored only on your device. Export anytime from Settings.</p>
+        </Card>
+      )}
 
       <p className="text-center text-xs text-slate-500">
         All insights are computed on your device from your own activity. For entertainment and harm-reduction only.

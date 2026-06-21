@@ -9,8 +9,8 @@ import { useApp } from '../context/AppContext.jsx'
 import { AVATARS, ALLOWANCE_OPTIONS } from '../data/avatars.js'
 import { formatPoints, formatDateTime } from '../lib/format.js'
 
-// Self-imposed daily stake caps (0 = no limit).
-const STAKE_LIMITS = [0, 500, 1000, 2500]
+// Quick-fill presets for the daily stake cap (the field also takes any value).
+const STAKE_LIMITS = [500, 1000, 2500]
 // "Take a break" cool-off durations.
 const COOLOFF_OPTIONS = [
   { label: '24 hours', hours: 24 },
@@ -57,6 +57,33 @@ export default function Settings() {
   const [avatar, setAvatar] = useState(user.avatar)
   const [savedFlash, setSavedFlash] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
+  // Free-form daily stake limit input (mirrors settings.dailyStakeLimit; '' = none).
+  const [limitInput, setLimitInput] = useState(
+    settings.dailyStakeLimit > 0 ? String(settings.dailyStakeLimit) : '',
+  )
+  const noLimit = settings.dailyStakeLimit <= 0
+
+  // Apply a typed/clicked limit value (floored, non-negative; 0 disables it).
+  function applyLimit(value) {
+    const n = Math.max(0, Math.floor(Number(value) || 0))
+    dispatch({ type: 'SET_STAKE_LIMIT', payload: { amount: n } })
+  }
+
+  function onLimitInput(value) {
+    setLimitInput(value)
+    applyLimit(value)
+  }
+
+  // Toggle the "no limit" checkbox. Unchecking restores the typed value (or a default).
+  function toggleNoLimit(checked) {
+    if (checked) {
+      applyLimit(0)
+    } else {
+      const n = Math.max(1, Math.floor(Number(limitInput) || 0)) || 1000
+      setLimitInput(String(n))
+      applyLimit(n)
+    }
+  }
 
   function saveProfile() {
     dispatch({ type: 'UPDATE_PROFILE', payload: { name, avatar } })
@@ -185,29 +212,61 @@ export default function Settings() {
           <div>
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-medium text-slate-200">Daily stake limit</p>
-              {settings.dailyStakeLimit > 0 && (
+              {!noLimit && (
                 <span className="text-xs text-slate-500">
                   {formatPoints(stakedToday)} / {formatPoints(settings.dailyStakeLimit)} used today
                 </span>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+
+            {/* Custom amount — type any value */}
+            <div className="relative max-w-xs">
+              <input
+                type="number"
+                min="1"
+                inputMode="numeric"
+                value={noLimit ? '' : limitInput}
+                onChange={(e) => onLimitInput(e.target.value)}
+                disabled={noLimit}
+                placeholder="Enter a daily limit"
+                className="w-full rounded-lg border border-white/10 bg-ink-900 p-2.5 pr-12 text-slate-100 placeholder:text-slate-500 focus:border-brand-400 disabled:opacity-40"
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
+                pts
+              </span>
+            </div>
+
+            {/* Quick-fill presets */}
+            <div className="mt-2 flex flex-wrap gap-2">
               {STAKE_LIMITS.map((a) => (
                 <button
                   key={a}
-                  onClick={() => dispatch({ type: 'SET_STAKE_LIMIT', payload: { amount: a } })}
+                  onClick={() => onLimitInput(String(a))}
+                  disabled={noLimit}
                   className={[
-                    'rounded-lg border px-4 py-2.5 text-center text-sm transition-colors',
-                    settings.dailyStakeLimit === a
+                    'rounded-lg border px-3 py-1.5 text-sm transition-colors disabled:opacity-40',
+                    !noLimit && settings.dailyStakeLimit === a
                       ? 'border-brand-400 bg-brand-500/[0.12] text-brand-200'
                       : 'border-white/10 bg-white/[0.03] text-slate-200 hover:bg-white/[0.06]',
                   ].join(' ')}
                 >
-                  {a === 0 ? 'No limit' : `${formatPoints(a)} pts`}
+                  {formatPoints(a)}
                 </button>
               ))}
             </div>
-            {settings.dailyStakeLimit > 0 && (
+
+            {/* No-limit checkbox */}
+            <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                checked={noLimit}
+                onChange={(e) => toggleNoLimit(e.target.checked)}
+                className="h-4 w-4 rounded border-white/20 bg-ink-900 text-brand-500 accent-brand-500 focus:ring-brand-500/40"
+              />
+              No daily limit
+            </label>
+
+            {!noLimit && (
               <p className="mt-2 text-xs text-slate-500">
                 {stakeRemaining > 0
                   ? `${formatPoints(stakeRemaining)} points left to stake today.`

@@ -6,7 +6,7 @@ import { formatPoints, formatUSD } from '../../lib/format.js'
 
 // Sticky context bar shown above every page: live balances, engagement streak,
 // the once-a-day play-point allowance, and the user's avatar (→ Settings).
-export default function TopBar({ onUrge }) {
+export default function TopBar() {
   const { user, points, savings, streak, canClaimDaily, settings, dispatch, syncStatus, cloudConfigured, cloudUser } =
     useApp()
 
@@ -38,14 +38,6 @@ export default function TopBar({ onUrge }) {
               Daily claimed
             </span>
           )}
-
-          <button
-            onClick={onUrge}
-            className="hidden items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/[0.08] px-3 py-1.5 text-sm font-semibold text-amber-200 transition-colors hover:bg-amber-500/[0.14] md:inline-flex"
-          >
-            <Icon name="lifebuoy" size={15} />
-            Urge?
-          </button>
 
           {cloudConfigured && cloudUser && (
             <Link

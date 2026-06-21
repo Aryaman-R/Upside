@@ -1,6 +1,4 @@
-import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import UrgeModal from '../urge/UrgeModal.jsx'
 import TopBar from './TopBar.jsx'
 import OnboardingModal from '../onboarding/OnboardingModal.jsx'
 import Icon from '../ui/Icon.jsx'
@@ -27,7 +25,6 @@ function navClass({ isActive }) {
 
 export default function Layout({ children }) {
   const { points, savings, onboarded } = useApp()
-  const [urgeOpen, setUrgeOpen] = useState(false)
 
   return (
     <div className="min-h-screen md:flex">
@@ -76,16 +73,8 @@ export default function Layout({ children }) {
           ))}
         </nav>
 
-        {/* Persistent urge-intervention button */}
         <div className="mt-auto hidden p-4 md:block">
-          <button
-            onClick={() => setUrgeOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-amber-500/[0.08] px-4 py-2.5 text-sm font-semibold text-amber-200 transition-colors hover:bg-amber-500/[0.14]"
-          >
-            <Icon name="lifebuoy" size={16} />
-            Feeling the urge?
-          </button>
-          <NavLink to="/settings" className={navClass} style={{ marginTop: '0.5rem' }}>
+          <NavLink to="/settings" className={navClass}>
             {({ isActive }) => (
               <>
                 <Icon
@@ -108,21 +97,10 @@ export default function Layout({ children }) {
       {/* Main content */}
       <main className="flex-1 px-4 py-5 md:px-8 md:py-6">
         <div className="mx-auto max-w-5xl">
-          <TopBar onUrge={() => setUrgeOpen(true)} />
+          <TopBar />
           {children}
         </div>
       </main>
-
-      {/* Floating urge button on mobile (sidebar version is hidden there) */}
-      <button
-        onClick={() => setUrgeOpen(true)}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500 px-5 py-3 text-sm font-bold text-ink-950 shadow-lg shadow-amber-900/30 md:hidden"
-      >
-        <Icon name="lifebuoy" size={16} />
-        Urge?
-      </button>
-
-      <UrgeModal open={urgeOpen} onClose={() => setUrgeOpen(false)} />
 
       {/* First-run onboarding (philosophy + name/avatar/allowance). */}
       <OnboardingModal open={!onboarded} />

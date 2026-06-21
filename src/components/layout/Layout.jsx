@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import UrgeModal from '../urge/UrgeModal.jsx'
+import TopBar from './TopBar.jsx'
+import OnboardingModal from '../onboarding/OnboardingModal.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import { formatPoints, formatUSD } from '../../lib/format.js'
 
@@ -8,12 +10,14 @@ const NAV = [
   { to: '/', label: 'Dashboard', icon: '🏠', end: true },
   { to: '/markets', label: 'Markets', icon: '📈' },
   { to: '/portfolio', label: 'Portfolio', icon: '🎟️' },
+  { to: '/insights', label: 'Insights', icon: '📊' },
   { to: '/leaderboard', label: 'Leaderboard', icon: '🏆' },
   { to: '/money-kept', label: 'Money Kept', icon: '💚' },
+  { to: '/plus', label: 'Upside Plus', icon: '✨' },
 ]
 
 export default function Layout({ children }) {
-  const { points, savings } = useApp()
+  const { points, savings, onboarded } = useApp()
   const [urgeOpen, setUrgeOpen] = useState(false)
 
   return (
@@ -69,6 +73,20 @@ export default function Layout({ children }) {
           >
             🫧 Feeling the urge?
           </button>
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              [
+                'mt-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-brand-500/15 text-brand-200'
+                  : 'text-slate-300 hover:bg-white/5 hover:text-slate-100',
+              ].join(' ')
+            }
+          >
+            <span aria-hidden>⚙️</span>
+            Settings
+          </NavLink>
           <p className="mt-3 text-center text-[11px] leading-snug text-slate-500">
             Play money only. No real wagering.
             <br />
@@ -79,7 +97,10 @@ export default function Layout({ children }) {
 
       {/* Main content */}
       <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
-        <div className="mx-auto max-w-5xl">{children}</div>
+        <div className="mx-auto max-w-5xl">
+          <TopBar onUrge={() => setUrgeOpen(true)} />
+          {children}
+        </div>
       </main>
 
       {/* Floating urge button on mobile (sidebar version is hidden there) */}
@@ -91,6 +112,9 @@ export default function Layout({ children }) {
       </button>
 
       <UrgeModal open={urgeOpen} onClose={() => setUrgeOpen(false)} />
+
+      {/* First-run onboarding (philosophy + name/avatar/allowance). */}
+      <OnboardingModal open={!onboarded} />
     </div>
   )
 }

@@ -25,6 +25,9 @@ export default function Dashboard() {
     pointsAtStake,
     savings,
     savingsProgress,
+    canClaimDaily,
+    settings,
+    dispatch,
   } = useApp()
 
   // Current standing vs. the mock field.
@@ -58,6 +61,24 @@ export default function Dashboard() {
           </div>
         </div>
       </Card>
+
+      {/* Daily allowance nudge */}
+      {canClaimDaily && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-brand-500/30 bg-brand-500/5">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl" aria-hidden>🎁</span>
+            <div>
+              <p className="text-sm font-semibold text-slate-100">
+                Your daily {formatPoints(settings.dailyAllowance)} play points are ready.
+              </p>
+              <p className="text-xs text-slate-400">A fresh, self-paced allowance — claim it and play on.</p>
+            </div>
+          </div>
+          <Button size="sm" onClick={() => dispatch({ type: 'CLAIM_DAILY' })}>
+            Claim {formatPoints(settings.dailyAllowance)} points
+          </Button>
+        </Card>
+      )}
 
       {/* Key stats */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -171,8 +192,10 @@ export default function Dashboard() {
       </Card>
 
       <p className="text-center text-xs text-slate-500">
-        Win rate on settled bets: {Math.round(winRate * 100)}% · For entertainment and
-        harm-reduction only.
+        Win rate on settled bets: {Math.round(winRate * 100)}% ·{' '}
+        <Link to="/insights" className="text-brand-300 hover:underline">
+          See your insights →
+        </Link>
       </p>
     </div>
   )

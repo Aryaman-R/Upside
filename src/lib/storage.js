@@ -3,7 +3,10 @@
 // user keep their play-money progress. It fails gracefully (e.g. private mode,
 // disabled storage) by acting as a no-op.
 
-const STORAGE_KEY = 'upside.state.v1'
+// Bumped to v2 when the state shape gained settings/onboarding/streak fields.
+// `migrateState` (in AppContext) backfills any missing keys, so an older blob
+// still loads cleanly rather than crashing the app.
+const STORAGE_KEY = 'upside.state.v2'
 
 export function loadState() {
   try {

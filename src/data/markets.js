@@ -143,3 +143,73 @@ export const MARKETS = [
 export function getMarketById(id) {
   return MARKETS.find((m) => m.id === id)
 }
+
+// ---------------------------------------------------------------------------
+// Cosmetic market analytics (deterministic, derived from the market itself)
+// ---------------------------------------------------------------------------
+// To give cards a Polymarket-style "price chart" without inventing a backend,
+// we synthesize a stable, deterministic price history for the leading outcome.
+// It's seeded from the market id so it never flickers between renders and needs
+// no stored data. Purely decorative — these are PLAY-money implied odds.
+
+// Tiny deterministic string hash → 32-bit seed.
+function hashSeed(str) {
+  let h = 2166136261
+  for (let i = 0; i < str.length; i += 1) {
+    h ^= str.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
+// mulberry32 PRNG: deterministic 0..1 generator from a numeric seed.
+function mulberry32(seed) {
+  let a = seed
+  return function next() {
+    a |= 0
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/**
+ * Deterministic implied-probability history for a market's primary outcome.
+ * Returns `points` values in 0..1 that drift toward the current price, so the
+ * sparkline visually "lands" on today's odds. Stable across renders.
+ */
+export function priceHistory(market, points = 16) {
+  const primary = market.outcomes[0]
+  const target = primary.price
+  const rand = mulberry32(hashSeed(market.id))
+  // Start somewhere plausible, then mean-revert toward the current price.
+  let v = clamp01(target + (rand() - 0.5) * 0.3)
+  const series = []
+  for (let i = 0; i < points; i += 1) {
+    const pull = (target - v) * 0.18 // drift toward today's price
+    const noise = (rand() - 0.5) * 0.08
+    v = clamp01(v + pull + noise)
+    series.push(v)
+  }
+  // Force the final point to exactly match the displayed price.
+  series[series.length - 1] = target
+  return series
+}
+
+function clamp01(n) {
+  return Math.max(0.02, Math.min(0.98, n))
+}
+
+/** 7-day directional change (in points) for the primary outcome's odds. */
+export function priceTrend(market) {
+  const h = priceHistory(market)
+  const delta = h[h.length - 1] - h[Math.max(0, h.length - 8)]
+  return Math.round(delta * 100) // percentage points, signed
+}
+
+/** Cosmetic, deterministic "active traders" count for social proof on a card. */
+export function marketTraders(market) {
+  const rand = mulberry32(hashSeed(`${market.id}-traders`))
+  return 200 + Math.round(rand() * 4800)
+}

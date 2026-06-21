@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer } from 'react'
 import { loadState, saveState } from '../lib/storage.js'
 import { getMarketById } from '../data/markets.js'
-import { potentialPayout } from '../lib/format.js'
+import { potentialPayout, dayKey, daysBetween } from '../lib/format.js'
 
 /**
  * AppContext is the single source of truth for everything the user does:
@@ -18,17 +18,30 @@ import { potentialPayout } from '../lib/format.js'
 // Initial / seed state
 // ---------------------------------------------------------------------------
 
-const STARTING_POINTS = 10000
+// Schema version for the persisted state. Bump when the shape changes; the
+// migrator (migrateState) backfills missing keys so older blobs still load.
+export const SCHEMA_VERSION = 2
 
 // A lightly pre-populated state so a brand-new user sees a living dashboard
 // instead of empty screens. All values are illustrative play data.
 function createInitialState() {
   return {
+    __v: SCHEMA_VERSION,
+    // First-run onboarding is shown until completed; persisted thereafter.
+    onboarded: false,
     user: {
       id: 'me',
       name: 'You',
       avatar: '🚀',
     },
+    // User-tunable preferences. dailyAllowance is the play-point top-up the user
+    // can claim once per day (a harmless, self-paced "daily bonus").
+    settings: {
+      dailyAllowance: 500,
+    },
+    // Live-streak + daily-allowance bookkeeping (local day keys, e.g. 2026-06-21).
+    lastActive: dayKey(),
+    lastAllowanceClaim: null, // null = the first daily bonus is claimable now
     points: 8550,
     // Seed positions reference real mock markets by id.
     positions: [
@@ -168,6 +181,63 @@ function reducer(state, action) {
       return { ...state, points: state.points + action.payload.amount }
     }
 
+    // --- Onboarding & profile ----------------------------------------------
+    case 'COMPLETE_ONBOARDING': {
+      const { name, avatar, dailyAllowance } = action.payload
+      return {
+        ...state,
+        onboarded: true,
+        user: {
+          ...state.user,
+          name: name?.trim() || state.user.name,
+          avatar: avatar || state.user.avatar,
+        },
+        settings: {
+          ...state.settings,
+          dailyAllowance: dailyAllowance > 0 ? dailyAllowance : state.settings.dailyAllowance,
+        },
+      }
+    }
+
+    case 'UPDATE_PROFILE': {
+      const { name, avatar } = action.payload
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          name: name?.trim() || state.user.name,
+          avatar: avatar || state.user.avatar,
+        },
+      }
+    }
+
+    case 'SET_ALLOWANCE': {
+      const amount = Math.max(0, Math.round(action.payload.amount || 0))
+      return { ...state, settings: { ...state.settings, dailyAllowance: amount } }
+    }
+
+    // --- Streak & daily allowance ------------------------------------------
+    // CHECK_IN runs once per app load. It advances the streak on consecutive
+    // days, resets it after a gap, and is a no-op if already counted today.
+    case 'CHECK_IN': {
+      const today = dayKey()
+      if (state.lastActive === today) return state
+      const gap = daysBetween(state.lastActive, today)
+      const streak = gap === 1 ? (state.streak || 0) + 1 : 1
+      return { ...state, streak, lastActive: today }
+    }
+
+    // Claim the once-daily play-point allowance. No-op if already claimed today.
+    case 'CLAIM_DAILY': {
+      const today = dayKey()
+      if (state.lastAllowanceClaim === today) return state
+      return {
+        ...state,
+        points: state.points + state.settings.dailyAllowance,
+        lastAllowanceClaim: today,
+      }
+    }
+
     // --- Savings redirect ("Money Kept") -----------------------------------
     case 'ADD_SAVINGS': {
       const { amount, note } = action.payload
@@ -225,16 +295,38 @@ function reducer(state, action) {
 
 const AppStateContext = createContext(null)
 
+// Backfill any keys a persisted (possibly older-schema) blob is missing, so the
+// app never crashes on `state.settings.x` after a shape change. Nested objects
+// are merged shallowly against the current defaults.
+function migrateState(loaded) {
+  const base = createInitialState()
+  return {
+    ...base,
+    ...loaded,
+    user: { ...base.user, ...loaded.user },
+    savings: { ...base.savings, ...loaded.savings },
+    settings: { ...base.settings, ...loaded.settings },
+    stats: { ...base.stats, ...loaded.stats },
+    __v: SCHEMA_VERSION,
+  }
+}
+
 export function AppProvider({ children }) {
   // Hydrate from localStorage if present, else use the seeded initial state.
   const [state, dispatch] = useReducer(reducer, undefined, () => {
-    return loadState() ?? createInitialState()
+    const loaded = loadState()
+    return loaded ? migrateState(loaded) : createInitialState()
   })
 
   // Persist on every change (optional convenience — see lib/storage.js).
   useEffect(() => {
     saveState(state)
   }, [state])
+
+  // Advance the engagement streak once per app load (no-op if already today).
+  useEffect(() => {
+    dispatch({ type: 'CHECK_IN' })
+  }, [])
 
   // Derived values used across pages, memoized for cheap re-use.
   const derived = useMemo(() => {
@@ -247,6 +339,7 @@ export function AppProvider({ children }) {
     )
     const totalGames = state.stats.wins + state.stats.losses
     const winRate = totalGames ? state.stats.wins / totalGames : 0
+    const canClaimDaily = state.lastAllowanceClaim !== dayKey()
 
     return {
       openPositions,
@@ -254,6 +347,7 @@ export function AppProvider({ children }) {
       pointsAtStake,
       savingsProgress,
       winRate,
+      canClaimDaily,
     }
   }, [state])
 

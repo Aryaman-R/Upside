@@ -8,6 +8,8 @@ import {
   formatProbability,
   potentialPayout,
   priceToMultiplier,
+  daysUntil,
+  marketStatus,
 } from '../../lib/format.js'
 
 // Quick-stake chips so betting is one tap, like the apps this replaces — but
@@ -28,9 +30,11 @@ export default function BetModal({ open, onClose, market, outcome }) {
 
   if (!market || !outcome) return null
 
+  const status = marketStatus(market.closeDate)
+  const closed = status === 'closed'
   const numericStake = Number(stake) || 0
   const tooMuch = numericStake > points
-  const valid = numericStake > 0 && !tooMuch
+  const valid = numericStake > 0 && !tooMuch && !closed
   const payout = potentialPayout(numericStake, outcome.price)
 
   function placeBet() {
@@ -61,7 +65,16 @@ export default function BetModal({ open, onClose, market, outcome }) {
               {priceToMultiplier(outcome.price).toFixed(2)}x payout
             </span>
           </div>
+          {status === 'closing-soon' && !closed && (
+            <p className="mt-2 text-xs text-amber-300">⏳ {daysUntil(market.closeDate)} — get in before it locks.</p>
+          )}
         </div>
+
+        {closed && (
+          <div className="rounded-lg bg-white/5 p-3 text-center text-sm text-slate-400">
+            This market has closed and is no longer accepting bets.
+          </div>
+        )}
 
         {placed ? (
           <div className="space-y-4">

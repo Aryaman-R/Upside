@@ -48,7 +48,7 @@ export default function Dashboard() {
       {/* Hero */}
       <Reveal immediate>
         <section className="relative min-h-[260px] overflow-hidden rounded-2xl bg-mesh-brand p-7 ring-1 ring-white/[0.06] sm:p-9">
-          {/* Soft emerald radial glow */}
+          {/* Soft brand (Upside Purple) radial glow */}
           <div
             aria-hidden
             className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-500/20 blur-3xl"

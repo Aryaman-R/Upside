@@ -60,7 +60,7 @@ function navClass({ isActive }) {
 function BrandMark() {
   return (
     <Link to="/" className="flex items-center gap-2.5" aria-label="Upside home">
-      <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 text-ink-950 shadow-glow-sm ring-1 ring-brand-300/40">
+      <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-glow-sm ring-1 ring-brand-300/40">
         <Icon name="logo" size={19} strokeWidth={2.75} />
       </span>
       <div>

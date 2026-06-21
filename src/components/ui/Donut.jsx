@@ -17,7 +17,7 @@ export default function Donut({
 
   // Gradient stop pairs (bright -> light) per tone.
   const TONES = {
-    brand: ['#34d399', '#6ee7b7'],
+    brand: ['#8a47df', '#a878e9'],
     sky: ['#38bdf8', '#7dd3fc'],
     rose: ['#fb7185', '#fda4af'],
     amber: ['#fbbf24', '#fcd34d'],

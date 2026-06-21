@@ -4,31 +4,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Accent — emerald, used sparingly. "Upside" leans calm/optimistic
-        // (green = growth/savings) rather than high-arousal gambling reds.
+        // Accent — "Upside Purple" (#6806C9) from the brand identity. Used for
+        // brand moments; win/loss stay green/rose for semantic clarity.
         brand: {
-          50: '#ecfdf5',
-          100: '#d1fae5',
-          200: '#a7f3d0',
-          300: '#6ee7b7',
-          400: '#34d399',
-          500: '#10b981',
-          600: '#059669',
-          700: '#047857',
-          800: '#065f46',
-          900: '#064e3b',
+          50: '#ece6f4', // brand "Background" lavender
+          100: '#dcc9f5',
+          200: '#c2a1ef',
+          300: '#a878e9',
+          400: '#8a47df',
+          500: '#6806c9', // Upside Purple — primary
+          600: '#5705a8',
+          700: '#450785',
+          800: '#330961',
+          900: '#210641',
         },
-        // Neutral surface scale — a refined, slightly desaturated slate so the
-        // app reads like a professional product, not a default dark template.
+        // Surface scale — violet-tinted darks anchored on "Deep Violet" (#100719).
         ink: {
-          950: '#080a0f',
-          900: '#0b0e14',
-          850: '#0f131b',
-          800: '#141925',
-          750: '#1a2030',
-          700: '#222a3b',
-          600: '#2e3850',
+          950: '#0a0411',
+          900: '#100719', // Deep Violet — base background
+          850: '#160b22',
+          800: '#1d0f2d',
+          750: '#261541',
+          700: '#321d54',
+          600: '#43296e',
         },
+        // Electric-blue secondary from the brand sheet, for subtle accents.
+        electric: '#296ece',
       },
       fontFamily: {
         // Body — Inter. Display — Space Grotesk for a confident, slightly
@@ -51,16 +52,16 @@ export default {
         // Subtle, single-layer elevation — no heavy drop shadows.
         card: '0 1px 0 0 rgba(255,255,255,0.03) inset, 0 1px 2px 0 rgba(0,0,0,0.4)',
         pop: '0 12px 40px -12px rgba(0,0,0,0.6)',
-        // Signature emerald glow for the moments that matter (hero stat, CTA).
-        glow: '0 0 0 1px rgba(16,185,129,0.18), 0 12px 50px -12px rgba(16,185,129,0.45)',
-        'glow-sm': '0 6px 24px -8px rgba(16,185,129,0.4)',
+        // Signature Upside-Purple glow for the moments that matter (hero, CTA).
+        glow: '0 0 0 1px rgba(104,6,201,0.22), 0 12px 50px -12px rgba(104,6,201,0.5)',
+        'glow-sm': '0 6px 24px -8px rgba(104,6,201,0.45)',
       },
       backgroundImage: {
-        // Reusable signature gradients for hero/spotlight surfaces.
+        // Reusable signature gradients — Upside Purple with an electric-blue cast.
         'mesh-brand':
-          'radial-gradient(120% 120% at 15% -10%, rgba(16,185,129,0.16), transparent 55%), radial-gradient(100% 120% at 100% 0%, rgba(56,189,248,0.08), transparent 50%)',
+          'radial-gradient(120% 120% at 15% -10%, rgba(104,6,201,0.22), transparent 55%), radial-gradient(100% 120% at 100% 0%, rgba(41,110,206,0.10), transparent 50%)',
         'spotlight-brand':
-          'radial-gradient(120% 120% at 50% 0%, rgba(16,185,129,0.14), transparent 60%)',
+          'radial-gradient(120% 120% at 50% 0%, rgba(104,6,201,0.18), transparent 60%)',
       },
       keyframes: {
         'fade-in': {
@@ -93,8 +94,8 @@ export default {
         },
         // Subtle brand "alive" pulse for streak / synced chips.
         'glow-pulse': {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(16,185,129,0.0)' },
-          '50%': { boxShadow: '0 0 0 5px rgba(16,185,129,0.08)' },
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(104,6,201,0.0)' },
+          '50%': { boxShadow: '0 0 0 5px rgba(104,6,201,0.1)' },
         },
         // SVG stroke draw-in for charts.
         draw: {

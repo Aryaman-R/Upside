@@ -22,7 +22,7 @@ export default function Sparkline({
   if (!data.length) return null
 
   const TONES = {
-    brand: { stroke: '#34d399', stop: 'rgba(52,211,153,0.35)', dot: '#6ee7b7' },
+    brand: { stroke: '#8a47df', stop: 'rgba(138,71,223,0.35)', dot: '#a878e9' },
     sky: { stroke: '#38bdf8', stop: 'rgba(56,189,248,0.35)', dot: '#7dd3fc' },
     rose: { stroke: '#fb7185', stop: 'rgba(251,113,133,0.35)', dot: '#fda4af' },
   }

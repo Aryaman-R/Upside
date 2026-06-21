@@ -23,11 +23,11 @@ const PATHS = {
       <rect x="14" y="9" width="4" height="7" rx="1" />
     </>
   ),
-  // Signature brand mark — stacked upward chevrons ("up · side").
+  // Signature brand mark — the Upside "A" peak (geometric upward apex + bar).
   logo: (
     <>
-      <path d="M5 12.5l7-7 7 7" />
-      <path d="M5 18.5l7-7 7 7" />
+      <path d="M4 20 L12 4 L20 20" />
+      <path d="M7.7 13.5 H16.3" />
     </>
   ),
   portfolio: (

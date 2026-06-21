@@ -29,7 +29,7 @@ export default function ProgressBar({ value, className = '', tone = 'brand', glo
         className={[
           'relative h-full rounded-full transition-[width] duration-1000 ease-out',
           fill,
-          glow && pct > 0 ? 'shadow-[0_0_12px_-2px_rgba(16,185,129,0.6)]' : '',
+          glow && pct > 0 ? 'shadow-[0_0_12px_-2px_rgba(104,6,201,0.6)]' : '',
         ].join(' ')}
         style={{ width: `${width}%` }}
       >

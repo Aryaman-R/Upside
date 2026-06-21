@@ -5,38 +5,73 @@
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    @apply bg-ink-900 text-slate-100 font-sans;
+    @apply bg-ink-950 text-slate-200 font-sans antialiased;
+    /* Subtle, single soft glow so the dark canvas has depth without noise. */
+    background-image: radial-gradient(
+      120% 80% at 50% -10%,
+      rgba(16, 185, 129, 0.06),
+      transparent 60%
+    );
+    background-attachment: fixed;
+  }
+
+  /* Tighten headings the way modern product UIs do. */
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tightish;
   }
 
   /* Consistent focus ring for keyboard users across custom controls. */
   :focus-visible {
-    @apply outline-none ring-2 ring-brand-400 ring-offset-2 ring-offset-ink-900;
+    @apply outline-none ring-2 ring-brand-500/70 ring-offset-2 ring-offset-ink-950;
   }
 }
 
 @layer components {
-  /* Frosted card surface reused across the app. */
+  /* Primary elevated surface — restrained border + single-layer shadow. */
   .surface {
-    @apply rounded-2xl border border-white/10 bg-ink-800/80 shadow-lg shadow-black/20;
+    @apply rounded-xl border border-white/[0.07] bg-ink-850 shadow-card;
   }
 
+  /* Inset/secondary surface used inside cards. */
   .surface-muted {
-    @apply rounded-xl border border-white/5 bg-white/5;
+    @apply rounded-lg border border-white/[0.05] bg-white/[0.025];
+  }
+
+  /* Hairline divider that matches the surface borders. */
+  .hairline {
+    @apply border-white/[0.07];
   }
 }
 
-/* Thin, unobtrusive scrollbars to keep the dashboard feeling calm. */
+/* Thin, unobtrusive scrollbars to keep the app feeling calm. */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.18);
+  background-clip: padding-box;
+}
+
+/* Hide number-input spinners for a cleaner stake/amount field. */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

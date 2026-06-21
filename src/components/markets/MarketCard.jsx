@@ -1,6 +1,7 @@
 import Card from '../ui/Card.jsx'
 import Badge from '../ui/Badge.jsx'
 import Sparkline from '../ui/Sparkline.jsx'
+import Icon from '../ui/Icon.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import {
   formatPoints,
@@ -137,8 +138,9 @@ function TrendLabel({ trend }) {
   }
   const up = trend > 0
   return (
-    <p className={['text-xs font-medium', up ? 'text-brand-300' : 'text-rose-300'].join(' ')}>
-      {up ? '▲' : '▼'} {Math.abs(trend)} pts · 7d
+    <p className={['flex items-center gap-1 text-xs font-medium', up ? 'text-brand-300' : 'text-rose-300'].join(' ')}>
+      <Icon name={up ? 'trendingUp' : 'trendingDown'} size={13} strokeWidth={2.5} />
+      {Math.abs(trend)} pts · 7d
     </p>
   )
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Card from '../components/ui/Card.jsx'
 import Button from '../components/ui/Button.jsx'
 import Badge from '../components/ui/Badge.jsx'
+import Icon from '../components/ui/Icon.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { AVATARS, ALLOWANCE_OPTIONS } from '../data/avatars.js'
 import { formatPoints } from '../lib/format.js'
@@ -135,7 +136,7 @@ export default function Settings() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={exportData}>
-            ⬇️ Export my data (JSON)
+            <Icon name="download" size={15} /> Export my data (JSON)
           </Button>
           {!confirmReset ? (
             <Button variant="outline" onClick={() => setConfirmReset(true)}>

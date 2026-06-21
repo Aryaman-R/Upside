@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Card from '../components/ui/Card.jsx'
 import Button from '../components/ui/Button.jsx'
 import Badge from '../components/ui/Badge.jsx'
+import Icon from '../components/ui/Icon.jsx'
 
 // Upside Plus — a NON-FUNCTIONAL upsell surface for an optional future
 // supporter tier. There are NO payments, no checkout, and no real money here:
@@ -41,9 +42,12 @@ export default function Plus() {
   return (
     <div className="space-y-6">
       {/* Hero */}
-      <Card className="bg-gradient-to-br from-brand-700/40 to-ink-800/80 text-center">
+      <Card className="bg-gradient-to-br from-brand-700/30 to-ink-850 text-center">
+        <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
+          <Icon name="plus" size={22} />
+        </span>
         <Badge tone="brand">Coming soon</Badge>
-        <h1 className="mt-3 text-3xl font-extrabold text-slate-50">✨ Upside Plus</h1>
+        <h1 className="mt-3 text-3xl font-bold tracking-tightish text-slate-50">Upside Plus</h1>
         <p className="mx-auto mt-2 max-w-xl text-sm text-slate-300">
           Optional support for the journey — deeper insight, accountability, and personalization.
           The core harm-reduction tools stay <strong className="text-brand-300">free, forever</strong>.
@@ -64,7 +68,7 @@ export default function Plus() {
           <ul className="space-y-2">
             {FREE_FEATURES.map((f) => (
               <li key={f} className="flex items-center gap-2 text-sm text-slate-300">
-                <span className="text-brand-400" aria-hidden>✓</span>
+                <Icon name="check" size={15} className="shrink-0 text-brand-400" />
                 {f}
               </li>
             ))}

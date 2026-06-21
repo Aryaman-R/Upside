@@ -5,6 +5,7 @@ import Badge from '../components/ui/Badge.jsx'
 import Button from '../components/ui/Button.jsx'
 import StatTile from '../components/ui/StatTile.jsx'
 import ProgressBar from '../components/ui/ProgressBar.jsx'
+import Icon from '../components/ui/Icon.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { MOCK_PLAYERS } from '../data/leaderboard.js'
 import {
@@ -64,9 +65,11 @@ export default function Dashboard() {
 
       {/* Daily allowance nudge */}
       {canClaimDaily && (
-        <Card className="flex flex-wrap items-center justify-between gap-3 border-brand-500/30 bg-brand-500/5">
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-brand-500/25 bg-brand-500/[0.06]">
           <div className="flex items-center gap-3">
-            <span className="text-2xl" aria-hidden>🎁</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-brand-300">
+              <Icon name="gift" size={18} />
+            </span>
             <div>
               <p className="text-sm font-semibold text-slate-100">
                 Your daily {formatPoints(settings.dailyAllowance)} play points are ready.
@@ -86,26 +89,26 @@ export default function Dashboard() {
           label="Points balance"
           value={formatPoints(points)}
           sub={`${formatPoints(pointsAtStake)} pts at stake`}
-          icon="🎮"
+          icon="coins"
         />
         <StatTile
           label="Money kept"
           value={formatUSD(savings.total)}
           sub={`Goal ${formatUSD(savings.goal)}`}
-          icon="💚"
+          icon="savings"
           accent
         />
         <StatTile
           label="Open positions"
           value={openPositions.length}
           sub={`${stats.wins}W · ${stats.losses}L all-time`}
-          icon="🎟️"
+          icon="portfolio"
         />
         <StatTile
           label="Standing"
           value={`#${rank}`}
-          sub={`🔥 ${streak}-day streak`}
-          icon="🏆"
+          sub={`${streak}-day streak`}
+          icon="trophy"
         />
       </div>
 
@@ -176,9 +179,11 @@ export default function Dashboard() {
       </div>
 
       {/* Reassurance / safety strip */}
-      <Card className="flex flex-wrap items-center justify-between gap-3 border-amber-400/20 bg-amber-500/5">
+      <Card className="flex flex-wrap items-center justify-between gap-3 border-amber-400/20 bg-amber-500/[0.05]">
         <div className="flex items-center gap-3">
-          <span className="text-2xl" aria-hidden>🛡️</span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/15 text-amber-300">
+            <Icon name="shield" size={18} />
+          </span>
           <div>
             <p className="text-sm font-semibold text-slate-100">
               No real money is ever at risk here.

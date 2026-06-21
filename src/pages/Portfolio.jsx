@@ -57,14 +57,10 @@ export default function Portfolio() {
       </header>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Open bets" value={openPositions.length} icon="🎟️" />
-        <StatTile label="At stake" value={`${formatPoints(pointsAtStake)} pts`} icon="⏳" />
-        <StatTile label="Settled" value={settledPositions.length} icon="📜" />
-        <StatTile
-          label="Total bets"
-          value={positions.length}
-          icon="📊"
-        />
+        <StatTile label="Open bets" value={openPositions.length} icon="portfolio" />
+        <StatTile label="At stake" value={`${formatPoints(pointsAtStake)} pts`} icon="clock" />
+        <StatTile label="Settled" value={settledPositions.length} icon="check" />
+        <StatTile label="Total bets" value={positions.length} icon="insights" />
       </div>
 
       {/* Open positions ----------------------------------------------------- */}

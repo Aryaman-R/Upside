@@ -6,6 +6,28 @@ Handoff doc for the next person/agent picking this up. Pairs with
 
 ---
 
+## Wave 3 — professional UI + social 🎨
+
+- **Design-system overhaul** for a professional, product-grade look (away from
+  the "vibecoded" emoji-icon feel): a dependency-free inline-SVG icon set
+  (`src/components/ui/Icon.jsx`) replacing emoji-as-icons across nav, stat tiles,
+  the top bar, and trends; refined tokens (neutral surface scale, subtler
+  borders/shadows, tighter radii + heading tracking) in `tailwind.config.js` +
+  `index.css`; reworked `Button`/`Badge`/`StatTile`/`ProgressBar`; a real logo
+  mark and refined sidebar/top-bar.
+- **Social features** (`src/pages/Social.jsx`, `src/components/social/*`,
+  `src/data/social.js`): add/remove **friends** (from a mock suggestion pool),
+  create/leave **groups** with a shared play-money standings board, and run
+  **head-to-head challenges** — stake play points on a pick vs a friend, settle
+  to award the 2× matched pot. New reducer actions: `ADD_FRIEND`,
+  `REMOVE_FRIEND`, `CREATE_GROUP`, `LEAVE_GROUP`, `CREATE_CHALLENGE`,
+  `RESOLVE_CHALLENGE`. The social graph is **mock + local** — real multiplayer
+  (presence, invites, matched settlement) needs a backend.
+
+Verified: `npm run build` + `npm run lint` pass clean after the wave.
+
+---
+
 ## Wave 2 — what was just added ✨
 
 The second build wave (UI refresh + feature depth) landed:
@@ -152,6 +174,9 @@ a product/legal decision — not a quick feature.
 | Edit urge prompts / moods | `src/data/prompts.js` |
 | Edit support resources | `src/data/resources.js` |
 | Edit avatars / allowance options | `src/data/avatars.js` |
+| Edit social graph / suggestions | `src/data/social.js` |
+| Tweak friends / groups / challenges | `src/pages/Social.jsx`, `src/components/social/*` |
+| Add/restyle an icon | `src/components/ui/Icon.jsx` |
 | Tweak the urge flow | `src/components/urge/UrgeModal.jsx` |
 | Tweak onboarding | `src/components/onboarding/OnboardingModal.jsx` |
 | Tweak betting | `src/components/markets/BetModal.jsx` |

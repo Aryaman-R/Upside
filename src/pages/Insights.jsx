@@ -5,6 +5,7 @@ import StatTile from '../components/ui/StatTile.jsx'
 import Sparkline from '../components/ui/Sparkline.jsx'
 import Donut from '../components/ui/Donut.jsx'
 import BarChart from '../components/ui/BarChart.jsx'
+import Icon from '../components/ui/Icon.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { MOOD_TAGS } from '../data/prompts.js'
 import { formatUSD, formatPoints } from '../lib/format.js'
@@ -46,9 +47,11 @@ export default function Insights() {
       </header>
 
       {/* Streak hero */}
-      <Card className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-br from-amber-500/10 to-ink-800/60">
+      <Card className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-br from-amber-500/[0.08] to-ink-850">
         <div className="flex items-center gap-4">
-          <span className="text-5xl" aria-hidden>🔥</span>
+          <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-amber-500/15 text-amber-300">
+            <Icon name="flame" size={28} />
+          </span>
           <div>
             <p className="text-3xl font-extrabold text-amber-200">{streak}-day streak</p>
             <p className="text-sm text-slate-400">
@@ -63,10 +66,10 @@ export default function Insights() {
 
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Money kept" value={formatUSD(savings.total)} icon="💚" accent />
-        <StatTile label="Redirects" value={savings.entries.length} sub="impulses diverted" icon="🔁" />
-        <StatTile label="Urges paused" value={journal.length} sub="reflections logged" icon="🫧" />
-        <StatTile label="Points balance" value={formatPoints(points)} icon="🎮" />
+        <StatTile label="Money kept" value={formatUSD(savings.total)} icon="savings" accent />
+        <StatTile label="Redirects" value={savings.entries.length} sub="impulses diverted" icon="refresh" />
+        <StatTile label="Urges paused" value={journal.length} sub="reflections logged" icon="lifebuoy" />
+        <StatTile label="Points balance" value={formatPoints(points)} icon="coins" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

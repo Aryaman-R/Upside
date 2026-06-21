@@ -48,6 +48,7 @@ the high-arousal reds and flashing wins of typical gambling UIs.
 | 🎮 **Play-money prediction markets** | Browse mock markets across Sports, Crypto, News, Pop Culture, and Science. Each has a question, Yes/No or multi-outcome prices, and a closing date. Stake **points** (never money) on an outcome. |
 | 🎟️ **Portfolio** | Track open positions, simulate market resolution with mock outcomes, and see settled win/loss history. Winnings and losses are points only. |
 | 🏆 **Leaderboard** | Mock players ranked by points, with **you** merged in and highlighted so you always see your standing. |
+| 🫂 **Friends & groups** | Add friends, form **groups** with a shared play-money standings board, and run friendly **head-to-head challenges** — stake play points on a pick, winner takes the matched pot. (Mock social graph; real multiplayer would need a backend.) |
 | 💚 **Money Kept (savings redirect)** | A running total of dollars *saved instead of bet*, a goal + progress bar, quick-add redirects, milestones, and a full history log. |
 | 🫧 **Urge-intervention flow** | A persistent "Feeling the urge?" button opens a 4-step flow: name the feeling → enforced cooldown timer → reflection journaling → redirect-to-savings → mood check + real support resources. |
 | 🏠 **Dashboard** | One overview tying it together: points balance, money kept, open positions, current streak/standing, daily-allowance claim, and a safety reminder. |

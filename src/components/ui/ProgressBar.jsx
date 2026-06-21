@@ -5,12 +5,12 @@ export default function ProgressBar({ value, className = '', tone = 'brand' }) {
   const pct = Math.max(0, Math.min(1, value)) * 100
   const fill =
     tone === 'brand'
-      ? 'bg-gradient-to-r from-brand-500 to-brand-300'
-      : 'bg-gradient-to-r from-sky-500 to-sky-300'
+      ? 'bg-gradient-to-r from-brand-600 to-brand-400'
+      : 'bg-gradient-to-r from-sky-600 to-sky-400'
 
   return (
     <div
-      className={['h-3 w-full overflow-hidden rounded-full bg-white/10', className].join(' ')}
+      className={['h-2 w-full overflow-hidden rounded-full bg-white/[0.07]', className].join(' ')}
       role="progressbar"
       aria-valuenow={Math.round(pct)}
       aria-valuemin={0}

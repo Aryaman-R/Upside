@@ -1,22 +1,22 @@
 import { Link } from 'react-router-dom'
 import Button from '../ui/Button.jsx'
+import Icon from '../ui/Icon.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import { formatPoints, formatUSD } from '../../lib/format.js'
 
 // Sticky context bar shown above every page: live balances, engagement streak,
 // the once-a-day play-point allowance, and the user's avatar (→ Settings).
-// Gives the app a polished "logged-in product" frame without a real backend.
 export default function TopBar({ onUrge }) {
   const { user, points, savings, streak, canClaimDaily, settings, dispatch } = useApp()
 
   return (
-    <header className="sticky top-0 z-30 -mx-4 mb-6 border-b border-white/10 bg-ink-900/80 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
+    <header className="sticky top-0 z-30 -mx-4 mb-6 border-b border-white/[0.06] bg-ink-950/80 px-4 py-2.5 backdrop-blur-md md:-mx-8 md:px-8">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
         {/* Balance chips */}
         <div className="flex items-center gap-2">
-          <Chip label="Points" value={formatPoints(points)} tone="default" />
-          <Chip label="Kept" value={formatUSD(savings.total)} tone="brand" />
-          <Chip label="Streak" value={`🔥 ${streak}`} tone="amber" hideOnMobile />
+          <Chip icon="coins" label="Points" value={formatPoints(points)} />
+          <Chip icon="savings" label="Kept" value={formatUSD(savings.total)} tone="brand" />
+          <Chip icon="flame" label="Streak" value={streak} tone="amber" hideOnMobile />
         </div>
 
         {/* Actions */}
@@ -27,24 +27,28 @@ export default function TopBar({ onUrge }) {
               onClick={() => dispatch({ type: 'CLAIM_DAILY' })}
               title={`Claim ${formatPoints(settings.dailyAllowance)} play points`}
             >
-              <span aria-hidden>🎁</span>
+              <Icon name="gift" size={15} />
               <span className="hidden sm:inline">Claim {formatPoints(settings.dailyAllowance)}</span>
               <span className="sm:hidden">Daily</span>
             </Button>
           ) : (
-            <span className="hidden text-xs text-slate-500 sm:inline">Daily bonus claimed ✓</span>
+            <span className="hidden items-center gap-1.5 text-xs text-slate-500 sm:flex">
+              <Icon name="check" size={14} className="text-brand-400" />
+              Daily claimed
+            </span>
           )}
 
           <button
             onClick={onUrge}
-            className="hidden rounded-xl border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-200 transition-colors hover:bg-amber-500/20 md:inline-flex"
+            className="hidden items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/[0.08] px-3 py-1.5 text-sm font-semibold text-amber-200 transition-colors hover:bg-amber-500/[0.14] md:inline-flex"
           >
-            🫧 Urge?
+            <Icon name="lifebuoy" size={15} />
+            Urge?
           </button>
 
           <Link
             to="/settings"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-lg transition-colors hover:bg-white/15"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-base transition-colors hover:bg-white/[0.08]"
             title={`${user.name} · Settings`}
             aria-label="Profile and settings"
           >
@@ -56,21 +60,27 @@ export default function TopBar({ onUrge }) {
   )
 }
 
-function Chip({ label, value, tone = 'default', hideOnMobile = false }) {
+function Chip({ icon, label, value, tone = 'default', hideOnMobile = false }) {
   const TONES = {
     default: 'text-slate-100',
     brand: 'text-brand-300',
     amber: 'text-amber-300',
   }
+  const ICON_TONES = {
+    default: 'text-slate-500',
+    brand: 'text-brand-400/70',
+    amber: 'text-amber-400/70',
+  }
   return (
     <div
       className={[
-        'rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5',
-        hideOnMobile ? 'hidden sm:block' : '',
+        'flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.03] px-2.5 py-1.5',
+        hideOnMobile ? 'hidden sm:flex' : '',
       ].join(' ')}
     >
-      <span className="mr-1.5 text-[10px] uppercase tracking-wide text-slate-500">{label}</span>
-      <span className={['text-sm font-bold tabular-nums', TONES[tone]].join(' ')}>{value}</span>
+      <Icon name={icon} size={14} className={ICON_TONES[tone]} />
+      <span className="text-[10px] uppercase tracking-wide text-slate-500">{label}</span>
+      <span className={['text-sm font-semibold tabular-nums', TONES[tone]].join(' ')}>{value}</span>
     </div>
   )
 }

@@ -107,14 +107,14 @@ export default function MoneyKept() {
       </Card>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatTile label="Total kept" value={formatUSD(savings.total)} icon="💚" accent />
-        <StatTile label="Redirects logged" value={savings.entries.length} icon="🔁" />
+        <StatTile label="Total kept" value={formatUSD(savings.total)} icon="savings" accent />
+        <StatTile label="Redirects logged" value={savings.entries.length} icon="refresh" />
         <StatTile
           label="Avg per redirect"
           value={formatUSD(
             savings.entries.length ? savings.total / savings.entries.length : 0,
           )}
-          icon="📈"
+          icon="trendingUp"
         />
       </div>
 

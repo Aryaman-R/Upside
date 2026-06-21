@@ -103,6 +103,24 @@ function createInitialState() {
     ],
     stats: { wins: 3, losses: 1 },
     streak: 4, // days engaging with the tool / staying within play limits
+    // Social graph — friends, groups, and friendly head-to-head challenges, all
+    // on PLAY points. Seeded lightly so the Friends page looks alive.
+    social: {
+      friends: [
+        { id: 'u-quinn', name: 'Quinn Avila', avatar: '🦊', points: 24850, streak: 7 },
+        { id: 'u-theo', name: 'Theo Park', avatar: '🦉', points: 18990, streak: 12 },
+      ],
+      groups: [
+        {
+          id: 'grp-seed-1',
+          name: 'Sunday Squad',
+          emoji: '🏈',
+          memberIds: ['u-quinn', 'u-theo'],
+          createdAt: '2026-06-10T17:00:00.000Z',
+        },
+      ],
+      challenges: [],
+    },
   }
 }
 
@@ -238,6 +256,91 @@ function reducer(state, action) {
       }
     }
 
+    // --- Social: friends, groups, friendly challenges ----------------------
+    case 'ADD_FRIEND': {
+      const { friend } = action.payload
+      if (state.social.friends.some((f) => f.id === friend.id)) return state
+      return { ...state, social: { ...state.social, friends: [...state.social.friends, friend] } }
+    }
+
+    case 'REMOVE_FRIEND': {
+      const { id } = action.payload
+      return {
+        ...state,
+        social: {
+          ...state.social,
+          friends: state.social.friends.filter((f) => f.id !== id),
+          // Also drop them from any group rosters.
+          groups: state.social.groups.map((g) => ({
+            ...g,
+            memberIds: g.memberIds.filter((m) => m !== id),
+          })),
+        },
+      }
+    }
+
+    case 'CREATE_GROUP': {
+      const { name, emoji, memberIds } = action.payload
+      const group = {
+        id: makeId('grp'),
+        name: name?.trim() || 'New group',
+        emoji: emoji || '🎯',
+        memberIds: memberIds || [],
+        createdAt: new Date().toISOString(),
+      }
+      return { ...state, social: { ...state.social, groups: [group, ...state.social.groups] } }
+    }
+
+    case 'LEAVE_GROUP': {
+      const { id } = action.payload
+      return {
+        ...state,
+        social: { ...state.social, groups: state.social.groups.filter((g) => g.id !== id) },
+      }
+    }
+
+    // Stake play points on a head-to-head pick against a friend (they "match").
+    case 'CREATE_CHALLENGE': {
+      const { friend, marketId, question, outcomeId, outcomeLabel, stake, price } = action.payload
+      if (stake <= 0 || stake > state.points) return state
+      const challenge = {
+        id: makeId('chal'),
+        friendId: friend.id,
+        friendName: friend.name,
+        friendAvatar: friend.avatar,
+        marketId,
+        question,
+        outcomeId,
+        outcomeLabel,
+        stake,
+        price,
+        status: 'open',
+        payout: 0,
+        createdAt: new Date().toISOString(),
+      }
+      return {
+        ...state,
+        points: state.points - stake,
+        social: { ...state.social, challenges: [challenge, ...state.social.challenges] },
+      }
+    }
+
+    // Settle a challenge. Winner takes the matched pot (2× the stake).
+    case 'RESOLVE_CHALLENGE': {
+      const { id, won } = action.payload
+      let pointsDelta = 0
+      const challenges = state.social.challenges.map((c) => {
+        if (c.id !== id || c.status !== 'open') return c
+        if (won) {
+          const payout = c.stake * 2
+          pointsDelta += payout
+          return { ...c, status: 'won', payout }
+        }
+        return { ...c, status: 'lost', payout: 0 }
+      })
+      return { ...state, points: state.points + pointsDelta, social: { ...state.social, challenges } }
+    }
+
     // --- Savings redirect ("Money Kept") -----------------------------------
     case 'ADD_SAVINGS': {
       const { amount, note } = action.payload
@@ -307,6 +410,7 @@ function migrateState(loaded) {
     savings: { ...base.savings, ...loaded.savings },
     settings: { ...base.settings, ...loaded.settings },
     stats: { ...base.stats, ...loaded.stats },
+    social: { ...base.social, ...loaded.social },
     __v: SCHEMA_VERSION,
   }
 }

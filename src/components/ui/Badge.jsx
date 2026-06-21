@@ -1,12 +1,12 @@
 // Small status / category pill.
 
 const TONES = {
-  neutral: 'bg-white/10 text-slate-300',
-  brand: 'bg-brand-500/15 text-brand-300 border border-brand-500/30',
-  win: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30',
-  loss: 'bg-rose-500/15 text-rose-300 border border-rose-500/30',
-  open: 'bg-sky-500/15 text-sky-300 border border-sky-500/30',
-  warn: 'bg-amber-500/15 text-amber-300 border border-amber-500/30',
+  neutral: 'bg-white/[0.06] text-slate-300 border border-white/10',
+  brand: 'bg-brand-500/12 text-brand-300 border border-brand-500/25',
+  win: 'bg-emerald-500/12 text-emerald-300 border border-emerald-500/25',
+  loss: 'bg-rose-500/12 text-rose-300 border border-rose-500/25',
+  open: 'bg-sky-500/12 text-sky-300 border border-sky-500/25',
+  warn: 'bg-amber-500/12 text-amber-300 border border-amber-500/25',
 }
 
 export default function Badge({ tone = 'neutral', className = '', children }) {

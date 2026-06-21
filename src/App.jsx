@@ -8,6 +8,7 @@ import MoneyKept from './pages/MoneyKept.jsx'
 import Insights from './pages/Insights.jsx'
 import Settings from './pages/Settings.jsx'
 import Plus from './pages/Plus.jsx'
+import Social from './pages/Social.jsx'
 
 // Top-level app shell + client-side routes. All state lives in <AppProvider>
 // (mounted in main.jsx), so pages just read/dispatch via the useApp() hook.
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/markets" element={<Markets />} />
         <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/insights" element={<Insights />} />
+        <Route path="/social" element={<Social />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/money-kept" element={<MoneyKept />} />
         <Route path="/settings" element={<Settings />} />

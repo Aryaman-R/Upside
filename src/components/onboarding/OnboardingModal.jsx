@@ -82,8 +82,9 @@ export default function OnboardingModal({ open }) {
               When a real-money urge hits, log that amount into{' '}
               <strong className="text-slate-200">Money Kept</strong>. The loss becomes a visible win.
             </Principle>
-            <Principle icon="wind" title="Interrupt the urge" delay={180}>
-              A one-tap pause — cooldown, reflection, and real help lines — is always a click away.
+            <Principle icon="wind" title="Stay in control" delay={180}>
+              Set your own play limits, take a break anytime in Settings, and reach real help lines
+              whenever you need them.
             </Principle>
           </ul>
           <div className="flex items-center justify-center gap-2 rounded-lg bg-amber-500/10 p-3 text-center text-xs text-amber-200">

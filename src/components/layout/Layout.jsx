@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import TopBar from './TopBar.jsx'
 import OnboardingModal from '../onboarding/OnboardingModal.jsx'
-import UrgeModal from '../urge/UrgeModal.jsx'
 import Icon from '../ui/Icon.jsx'
 import AnimatedNumber from '../ui/AnimatedNumber.jsx'
 import { useApp } from '../../context/AppContext.jsx'
@@ -34,8 +33,7 @@ const NAV_SECTIONS = [
   },
 ]
 
-// Mobile bottom tab bar: two destinations each side of a central "Pause"
-// action, with everything else in a "More" sheet.
+// Mobile bottom tab bar: primary destinations plus a "More" sheet.
 const MOBILE_LEFT = [
   { to: '/', label: 'Home', icon: 'dashboard', end: true },
   { to: '/markets', label: 'Markets', icon: 'markets' },
@@ -75,7 +73,6 @@ function BrandMark() {
 
 export default function Layout({ children }) {
   const { points, savings, onboarded } = useApp()
-  const [urgeOpen, setUrgeOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
 
   return (
@@ -153,15 +150,7 @@ export default function Layout({ children }) {
           </NavLink>
         </nav>
 
-        {/* Always-available urge-pause — the heart of the harm-reduction tool. */}
         <div className="mt-auto space-y-3 p-4">
-          <button
-            onClick={() => setUrgeOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand-500/30 bg-brand-500/[0.07] px-3 py-2.5 text-sm font-semibold text-brand-200 transition-colors hover:bg-brand-500/[0.12]"
-          >
-            <Icon name="lifebuoy" size={16} />
-            Take a pause
-          </button>
           <NavLink to="/settings" className={navClass}>
             {({ isActive }) => (
               <>
@@ -186,15 +175,8 @@ export default function Layout({ children }) {
       </aside>
 
       {/* Mobile top app bar */}
-      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-white/[0.06] bg-ink-950/80 px-4 py-3 backdrop-blur-md md:hidden">
+      <div className="sticky top-0 z-40 flex items-center border-b border-white/[0.06] bg-ink-950/80 px-4 py-3 backdrop-blur-md md:hidden">
         <BrandMark />
-        <button
-          onClick={() => setUrgeOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-brand-500/30 bg-brand-500/[0.08] px-3 py-1.5 text-xs font-semibold text-brand-200"
-        >
-          <Icon name="lifebuoy" size={14} />
-          Pause
-        </button>
       </div>
 
       {/* Main content */}
@@ -234,25 +216,10 @@ export default function Layout({ children }) {
           </>
         )}
 
-        <div className="mx-auto grid max-w-lg grid-cols-5 items-end">
+        <div className="mx-auto grid max-w-lg grid-cols-4 items-end">
           {MOBILE_LEFT.map((item) => (
             <MobileTab key={item.to} item={item} onNavigate={() => setMoreOpen(false)} />
           ))}
-
-          {/* Central Pause action */}
-          <button
-            onClick={() => {
-              setMoreOpen(false)
-              setUrgeOpen(true)
-            }}
-            className="flex flex-col items-center justify-center gap-1 py-2"
-            aria-label="Take a pause"
-          >
-            <span className="-mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-ink-950 shadow-glow ring-4 ring-ink-950">
-              <Icon name="lifebuoy" size={22} strokeWidth={2.25} />
-            </span>
-            <span className="text-[10px] font-medium text-brand-300">Pause</span>
-          </button>
 
           {MOBILE_RIGHT.map((item) => (
             <MobileTab key={item.to} item={item} onNavigate={() => setMoreOpen(false)} />
@@ -273,9 +240,8 @@ export default function Layout({ children }) {
         </div>
       </nav>
 
-      {/* First-run onboarding + the global urge-intervention flow. */}
+      {/* First-run onboarding. */}
       <OnboardingModal open={!onboarded} />
-      <UrgeModal open={urgeOpen} onClose={() => setUrgeOpen(false)} />
     </div>
   )
 }

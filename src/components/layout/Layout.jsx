@@ -60,9 +60,8 @@ function navClass({ isActive }) {
 function BrandMark() {
   return (
     <Link to="/" className="flex items-center gap-2.5" aria-label="Upside home">
-      <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-glow-sm ring-1 ring-brand-300/40">
-        <Icon name="logo" size={19} strokeWidth={2.75} />
-      </span>
+      {/* Exact brand mark, snipped from Upside Logo.svg — floating, no container. */}
+      <img src="/logo-mark.svg" alt="Upside" className="h-9 w-9 shrink-0" />
       <div>
         <p className="font-display text-[17px] font-bold leading-none tracking-tight text-slate-50">Upside</p>
         <p className="mt-1 text-[11px] text-slate-500">bet on yourself</p>

@@ -54,7 +54,8 @@ the high-arousal reds and flashing wins of typical gambling UIs.
 | 🏠 **Dashboard** | One overview tying it together: points balance, money kept, open positions, current streak/standing, daily-allowance claim, and a safety reminder. |
 | 📊 **Insights** | Your progress visualized — cumulative Money Kept over time, play win-rate, and before/after mood shifts from the urge flow, plus a live engagement streak. |
 | 👋 **Onboarding & profile** | A first-run explainer of the harm-reduction philosophy, plus name/avatar and a self-set **daily play allowance**. Editable anytime in **Settings**. |
-| ⚙️ **Settings & data controls** | Edit profile/allowance, **export your data** (JSON), and **reset progress** — everything stays on your device. |
+| 🧰 **Play limits & breaks** | Set a **self-imposed daily stake limit** and **"take a break"** cool-off periods (24h / 3d / 1 week). Enforced across betting *and* challenges — the urge tools always stay open. |
+| ⚙️ **Settings & data controls** | Edit profile/allowance, set play limits, **export your data** (JSON), and **reset progress** — everything stays on your device. |
 | ✨ **Upside Plus** *(teaser)* | A non-functional preview of an optional supporter tier (deeper insights, accountability, clinician reports). No payments, no pay-to-win — see [`docs/MONETIZATION.md`](docs/MONETIZATION.md). |
 
 Markets are **date-aware**: they show a "closing soon" treatment and stop

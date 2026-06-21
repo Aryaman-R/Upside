@@ -17,12 +17,12 @@ import { priceHistory, priceTrend, marketTraders } from '../../data/markets.js'
 // odds, and a 7-day trend — all on PLAY points. Clicking an outcome opens the
 // bet flow via the `onPick(market, outcome)` callback supplied by the page.
 export default function MarketCard({ market, onPick }) {
-  const { isMarketResolved, resolvedMarkets } = useApp()
+  const { isMarketResolved, resolvedMarkets, cooloffActive } = useApp()
   const resolved = isMarketResolved(market.id)
   const winningId = resolvedMarkets[market.id]
   const status = marketStatus(market.closeDate)
   const closed = status === 'closed'
-  const locked = resolved || closed // no new bets
+  const locked = resolved || closed || cooloffActive // no new bets
 
   const binary = market.outcomes.length === 2
   const trend = priceTrend(market)
@@ -122,7 +122,9 @@ export default function MarketCard({ market, onPick }) {
           {formatPoints(market.volume)} vol · {formatPoints(marketTraders(market))} traders
         </span>
         {locked ? (
-          <span className="text-slate-500">{resolved ? 'Settled' : 'Betting closed'}</span>
+          <span className="text-slate-500">
+            {resolved ? 'Settled' : closed ? 'Betting closed' : 'On a break'}
+          </span>
         ) : (
           <span className="text-slate-400">Tap to bet</span>
         )}

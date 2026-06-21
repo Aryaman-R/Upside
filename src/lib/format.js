@@ -51,6 +51,16 @@ export function formatDate(iso) {
   })
 }
 
+/** Human-friendly date + time, e.g. "Jun 22, 3:40 PM". */
+export function formatDateTime(iso) {
+  return new Date(iso).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
 /** Whole days until an ISO date (negative once past). */
 export function daysUntilCount(iso) {
   const ms = new Date(iso).getTime() - Date.now()

@@ -17,7 +17,7 @@ import {
 const QUICK_STAKES = [100, 250, 500, 1000]
 
 export default function BetModal({ open, onClose, market, outcome }) {
-  const { points, dispatch } = useApp()
+  const { points, dispatch, cooloffActive, stakeRemaining } = useApp()
   const [stake, setStake] = useState('')
   const [placed, setPlaced] = useState(false)
 
@@ -34,7 +34,8 @@ export default function BetModal({ open, onClose, market, outcome }) {
   const closed = status === 'closed'
   const numericStake = Number(stake) || 0
   const tooMuch = numericStake > points
-  const valid = numericStake > 0 && !tooMuch && !closed
+  const overLimit = numericStake > stakeRemaining
+  const valid = numericStake > 0 && !tooMuch && !closed && !cooloffActive && !overLimit
   const payout = potentialPayout(numericStake, outcome.price)
 
   function placeBet() {
@@ -73,6 +74,12 @@ export default function BetModal({ open, onClose, market, outcome }) {
         {closed && (
           <div className="rounded-lg bg-white/5 p-3 text-center text-sm text-slate-400">
             This market has closed and is no longer accepting bets.
+          </div>
+        )}
+
+        {cooloffActive && !closed && (
+          <div className="rounded-lg border border-amber-400/25 bg-amber-500/[0.08] p-3 text-center text-sm text-amber-200">
+            You’re on a self-imposed break — betting is paused. You can end it early in Settings.
           </div>
         )}
 
@@ -115,6 +122,11 @@ export default function BetModal({ open, onClose, market, outcome }) {
               {tooMuch && (
                 <p className="mt-1 text-xs text-rose-300">
                   You only have {formatPoints(points)} points.
+                </p>
+              )}
+              {!tooMuch && overLimit && (
+                <p className="mt-1 text-xs text-amber-300">
+                  Daily stake limit reached — {formatPoints(Math.max(0, stakeRemaining))} pts left today.
                 </p>
               )}
               <div className="mt-2 flex flex-wrap gap-2">

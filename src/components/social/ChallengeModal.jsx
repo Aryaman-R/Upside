@@ -11,7 +11,7 @@ const QUICK_STAKES = [100, 250, 500, 1000]
 // Stake play points on a head-to-head pick against a friend. The friend
 // "matches" your stake; the winner takes the 2× pot. Pure play points.
 export default function ChallengeModal({ open, onClose, friend }) {
-  const { points, dispatch } = useApp()
+  const { points, dispatch, cooloffActive, stakeRemaining } = useApp()
   const openMarkets = useMemo(() => MARKETS.filter((m) => marketStatus(m.closeDate) !== 'closed'), [])
 
   const [marketId, setMarketId] = useState(openMarkets[0]?.id ?? '')
@@ -34,7 +34,8 @@ export default function ChallengeModal({ open, onClose, friend }) {
   const outcome = market?.outcomes.find((o) => o.id === outcomeId)
   const numericStake = Number(stake) || 0
   const tooMuch = numericStake > points
-  const valid = market && outcome && numericStake > 0 && !tooMuch
+  const overLimit = numericStake > stakeRemaining
+  const valid = market && outcome && numericStake > 0 && !tooMuch && !cooloffActive && !overLimit
 
   function confirm() {
     if (!valid) return
@@ -63,6 +64,12 @@ export default function ChallengeModal({ open, onClose, friend }) {
             <p className="text-xs text-slate-500">Winner takes the matched pot · play points only</p>
           </div>
         </div>
+
+        {cooloffActive && !placed && (
+          <div className="rounded-lg border border-amber-400/25 bg-amber-500/[0.08] p-3 text-center text-sm text-amber-200">
+            You’re on a self-imposed break — challenges are paused. End it in Settings.
+          </div>
+        )}
 
         {placed ? (
           <div className="space-y-4">

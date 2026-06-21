@@ -2,12 +2,15 @@ import { useMemo, useState } from 'react'
 import MarketCard from '../components/markets/MarketCard.jsx'
 import BetModal from '../components/markets/BetModal.jsx'
 import Badge from '../components/ui/Badge.jsx'
+import Card from '../components/ui/Card.jsx'
+import Button from '../components/ui/Button.jsx'
+import { Link } from 'react-router-dom'
 import { MARKETS, MARKET_CATEGORIES } from '../data/markets.js'
 import { useApp } from '../context/AppContext.jsx'
-import { formatPoints } from '../lib/format.js'
+import { formatPoints, formatDateTime } from '../lib/format.js'
 
 export default function Markets() {
-  const { points } = useApp()
+  const { points, cooloffActive, settings, dispatch, stakeRemaining } = useApp()
   const [category, setCategory] = useState('All')
   const [pick, setPick] = useState({ market: null, outcome: null })
 
@@ -27,6 +30,33 @@ export default function Markets() {
         </div>
         <Badge tone="brand">Balance: {formatPoints(points)} pts</Badge>
       </header>
+
+      {/* Self-imposed break banner */}
+      {cooloffActive && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-amber-400/25 bg-amber-500/[0.07]">
+          <div>
+            <p className="text-sm font-semibold text-amber-200">You’re on a break — betting is paused.</p>
+            <p className="text-xs text-slate-400">
+              Until {formatDateTime(settings.cooloffUntil)}. The urge tools and Money Kept stay open.
+            </p>
+          </div>
+          <Button size="sm" variant="ghost" onClick={() => dispatch({ type: 'END_COOLOFF' })}>
+            End break early
+          </Button>
+        </Card>
+      )}
+
+      {/* Daily stake-limit progress */}
+      {!cooloffActive && settings.dailyStakeLimit > 0 && (
+        <p className="text-xs text-slate-500">
+          Daily stake limit:{' '}
+          {stakeRemaining > 0 ? (
+            <>{formatPoints(stakeRemaining)} of {formatPoints(settings.dailyStakeLimit)} pts left today.</>
+          ) : (
+            <>reached for today — betting resumes tomorrow. Adjust in <Link to="/settings" className="text-brand-300 hover:underline">Settings</Link>.</>
+          )}
+        </p>
+      )}
 
       {/* Category filter */}
       <div className="flex flex-wrap gap-2">

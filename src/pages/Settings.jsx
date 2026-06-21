@@ -5,7 +5,16 @@ import Badge from '../components/ui/Badge.jsx'
 import Icon from '../components/ui/Icon.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { AVATARS, ALLOWANCE_OPTIONS } from '../data/avatars.js'
-import { formatPoints } from '../lib/format.js'
+import { formatPoints, formatDateTime } from '../lib/format.js'
+
+// Self-imposed daily stake caps (0 = no limit).
+const STAKE_LIMITS = [0, 500, 1000, 2500]
+// "Take a break" cool-off durations.
+const COOLOFF_OPTIONS = [
+  { label: '24 hours', hours: 24 },
+  { label: '3 days', hours: 72 },
+  { label: '1 week', hours: 168 },
+]
 
 // Build the persistable slice of state for export (omits functions/derived).
 function exportableState(ctx) {
@@ -21,7 +30,7 @@ function exportableState(ctx) {
 
 export default function Settings() {
   const ctx = useApp()
-  const { user, settings, dispatch } = ctx
+  const { user, settings, dispatch, cooloffActive, stakedToday, stakeRemaining } = ctx
 
   const [name, setName] = useState(user.name === 'You' ? '' : user.name)
   const [avatar, setAvatar] = useState(user.avatar)
@@ -123,6 +132,84 @@ export default function Settings() {
         <div className="flex items-center gap-3">
           <Button onClick={saveProfile}>Save changes</Button>
           {savedFlash && <Badge tone="win">Saved ✓</Badge>}
+        </div>
+      </Card>
+
+      {/* Play limits & breaks ---------------------------------------------- */}
+      <Card className="space-y-5">
+        <div>
+          <h2 className="text-lg font-bold text-slate-100">Play limits &amp; breaks</h2>
+          <p className="text-sm text-slate-400">
+            Stay in control. These caps are yours to set — and we enforce them across betting and challenges.
+          </p>
+        </div>
+
+        {/* Daily stake limit */}
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-sm font-medium text-slate-200">Daily stake limit</p>
+            {settings.dailyStakeLimit > 0 && (
+              <span className="text-xs text-slate-500">
+                {formatPoints(stakedToday)} / {formatPoints(settings.dailyStakeLimit)} used today
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {STAKE_LIMITS.map((a) => (
+              <button
+                key={a}
+                onClick={() => dispatch({ type: 'SET_STAKE_LIMIT', payload: { amount: a } })}
+                className={[
+                  'rounded-lg border px-4 py-2.5 text-center text-sm transition-colors',
+                  settings.dailyStakeLimit === a
+                    ? 'border-brand-400 bg-brand-500/[0.12] text-brand-200'
+                    : 'border-white/10 bg-white/[0.03] text-slate-200 hover:bg-white/[0.06]',
+                ].join(' ')}
+              >
+                {a === 0 ? 'No limit' : `${formatPoints(a)} pts`}
+              </button>
+            ))}
+          </div>
+          {settings.dailyStakeLimit > 0 && (
+            <p className="mt-2 text-xs text-slate-500">
+              {stakeRemaining > 0
+                ? `${formatPoints(stakeRemaining)} points left to stake today.`
+                : 'Daily stake limit reached — betting paused until tomorrow.'}
+            </p>
+          )}
+        </div>
+
+        {/* Take a break / cool-off */}
+        <div>
+          <p className="mb-2 text-sm font-medium text-slate-200">Take a break</p>
+          {cooloffActive ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-400/25 bg-amber-500/[0.08] px-4 py-3">
+              <p className="text-sm text-amber-200">
+                You’re on a break until <strong>{formatDateTime(settings.cooloffUntil)}</strong>. Betting is paused.
+              </p>
+              <Button size="sm" variant="ghost" onClick={() => dispatch({ type: 'END_COOLOFF' })}>
+                End break early
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2">
+                {COOLOFF_OPTIONS.map((o) => (
+                  <Button
+                    key={o.hours}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => dispatch({ type: 'START_COOLOFF', payload: { hours: o.hours } })}
+                  >
+                    Pause for {o.label}
+                  </Button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                A cool-off pauses all play-money betting and challenges. The urge tools and Money Kept stay available.
+              </p>
+            </>
+          )}
         </div>
       </Card>
 

@@ -3,6 +3,7 @@ import Card from '../components/ui/Card.jsx'
 import Button from '../components/ui/Button.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import Icon from '../components/ui/Icon.jsx'
+import AccountCard from '../components/auth/AccountCard.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { AVATARS, ALLOWANCE_OPTIONS } from '../data/avatars.js'
 import { formatPoints, formatDateTime } from '../lib/format.js'
@@ -88,8 +89,11 @@ export default function Settings() {
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-extrabold text-slate-50">Settings</h1>
-        <p className="text-sm text-slate-400">Your profile, play allowance, and data — all stored on this device.</p>
+        <p className="text-sm text-slate-400">Your account, profile, play limits, and data.</p>
       </header>
+
+      {/* Account & cloud sync ---------------------------------------------- */}
+      <AccountCard />
 
       {/* Profile ------------------------------------------------------------ */}
       <Card className="space-y-4">

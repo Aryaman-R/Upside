@@ -1,7 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useReducer } from 'react'
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { loadState, saveState } from '../lib/storage.js'
 import { getMarketById } from '../data/markets.js'
 import { dayKey } from '../lib/format.js'
+import { useAuth } from './AuthContext.jsx'
+import { pullState, pushState } from '../lib/cloudSync.js'
 import {
   reducer,
   createInitialState,
@@ -45,6 +47,66 @@ export function AppProvider({ children }) {
     dispatch({ type: 'CHECK_IN' })
   }, [])
 
+  // --- Cloud sync (optional, offline-first) --------------------------------
+  // 'local' (signed out / not configured) | 'syncing' | 'synced' | 'error'.
+  const { configured, user } = useAuth()
+  const [syncStatus, setSyncStatus] = useState('local')
+  // Tracks which user we've started / finished the initial pull for, so the
+  // debounced push never fires before the pull has reconciled state.
+  const syncRef = useRef({ startedFor: null, readyFor: null })
+
+  // On sign-in: pull the cloud snapshot if it exists, else upload the current
+  // local state ("claim local progress"). Cloud wins on subsequent logins.
+  useEffect(() => {
+    if (!configured || !user) {
+      syncRef.current = { startedFor: null, readyFor: null }
+      setSyncStatus('local')
+      return undefined
+    }
+    if (syncRef.current.startedFor === user.id) return undefined
+    syncRef.current.startedFor = user.id
+    let cancelled = false
+    setSyncStatus('syncing')
+    ;(async () => {
+      try {
+        const remote = await pullState(user.id)
+        if (cancelled) return
+        if (remote?.state && remote.state.__v != null) {
+          dispatch({ type: 'HYDRATE', payload: { state: remote.state } })
+        } else {
+          await pushState(user.id, state) // first sign-in: claim local progress
+        }
+        if (!cancelled) {
+          syncRef.current.readyFor = user.id
+          setSyncStatus('synced')
+        }
+      } catch (err) {
+        console.warn('[upside] cloud pull failed:', err)
+        if (!cancelled) setSyncStatus('error')
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configured, user])
+
+  // While signed in, push state changes to the cloud (debounced).
+  useEffect(() => {
+    if (!configured || !user || syncRef.current.readyFor !== user.id) return undefined
+    const t = setTimeout(async () => {
+      try {
+        await pushState(user.id, state)
+        setSyncStatus('synced')
+      } catch (err) {
+        console.warn('[upside] cloud push failed:', err)
+        setSyncStatus('error')
+      }
+    }, 800)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, user, configured])
+
   // Derived values used across pages, memoized for cheap re-use.
   const derived = useMemo(() => {
     const openPositions = state.positions.filter((p) => p.status === 'open')
@@ -81,9 +143,12 @@ export function AppProvider({ children }) {
       dispatch,
       isMarketResolved,
       getMarketById,
+      syncStatus,
+      cloudConfigured: configured,
+      cloudUser: user,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [state, derived],
+    [state, derived, syncStatus, configured, user],
   )
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>

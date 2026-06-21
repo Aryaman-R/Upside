@@ -428,6 +428,11 @@ export function reducer(state, action) {
     }
 
     // --- Maintenance --------------------------------------------------------
+    // Replace the entire state with a snapshot (e.g. pulled from cloud sync),
+    // run through the migrator so an older remote blob is safely backfilled.
+    case 'HYDRATE':
+      return migrateState(action.payload.state)
+
     case 'RESET':
       return createInitialState()
 

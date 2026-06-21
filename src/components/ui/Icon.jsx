@@ -188,6 +188,14 @@ const PATHS = {
       <path d="m21.854 2.147-10.94 10.939" />
     </>
   ),
+  cloud: <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />,
+  logout: (
+    <>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" x2="9" y1="12" y2="12" />
+    </>
+  ),
 }
 
 export default function Icon({ name, size = 18, strokeWidth = 2, className = '' }) {

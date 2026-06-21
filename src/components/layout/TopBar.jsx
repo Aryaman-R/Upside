@@ -7,7 +7,8 @@ import { formatPoints, formatUSD } from '../../lib/format.js'
 // Sticky context bar shown above every page: live balances, engagement streak,
 // the once-a-day play-point allowance, and the user's avatar (→ Settings).
 export default function TopBar({ onUrge }) {
-  const { user, points, savings, streak, canClaimDaily, settings, dispatch } = useApp()
+  const { user, points, savings, streak, canClaimDaily, settings, dispatch, syncStatus, cloudConfigured, cloudUser } =
+    useApp()
 
   return (
     <header className="sticky top-0 z-30 -mx-4 mb-6 border-b border-white/[0.06] bg-ink-950/80 px-4 py-2.5 backdrop-blur-md md:-mx-8 md:px-8">
@@ -45,6 +46,22 @@ export default function TopBar({ onUrge }) {
             <Icon name="lifebuoy" size={15} />
             Urge?
           </button>
+
+          {cloudConfigured && cloudUser && (
+            <Link
+              to="/settings"
+              className={[
+                'hidden items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs sm:flex',
+                syncStatus === 'error'
+                  ? 'border-rose-500/25 bg-rose-500/[0.08] text-rose-300'
+                  : 'border-white/[0.07] bg-white/[0.03] text-slate-400',
+              ].join(' ')}
+              title={`Cloud sync: ${syncStatus}`}
+            >
+              <Icon name="cloud" size={14} className={syncStatus === 'synced' ? 'text-brand-400' : undefined} />
+              {syncStatus === 'synced' ? 'Synced' : syncStatus === 'syncing' ? 'Syncing…' : syncStatus === 'error' ? 'Error' : 'Local'}
+            </Link>
+          )}
 
           <Link
             to="/settings"

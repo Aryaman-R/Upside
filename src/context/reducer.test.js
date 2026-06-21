@@ -163,6 +163,16 @@ test('ADD_FRIEND dedupes and REMOVE_FRIEND also clears group rosters', () => {
   assert.ok(!removed.social.groups[0].memberIds.includes('u-quinn'))
 })
 
+test('HYDRATE replaces state with a (migrated) snapshot', () => {
+  const s0 = createInitialState()
+  const snapshot = { points: 99999, settings: { dailyAllowance: 1000 } }
+  const s1 = reducer(s0, { type: 'HYDRATE', payload: { state: snapshot } })
+  assert.equal(s1.points, 99999)
+  assert.equal(s1.settings.dailyAllowance, 1000)
+  assert.equal(s1.settings.dailyStakeLimit, 0) // backfilled by migrateState
+  assert.ok(s1.social) // backfilled
+})
+
 test('migrateState backfills missing keys from an older blob', () => {
   // Simulate a v2 blob with no responsible-gambling fields and no social slice.
   const old = { points: 1234, settings: { dailyAllowance: 250 } }

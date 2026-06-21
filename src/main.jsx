@@ -3,15 +3,19 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { AppProvider } from './context/AppContext.jsx'
+import { AuthProvider } from './context/AuthContext.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      {/* AppProvider holds ALL app state (points, positions, savings, journal). */}
-      <AppProvider>
-        <App />
-      </AppProvider>
+      {/* AuthProvider (optional cloud sync) wraps AppProvider, which holds ALL
+          app state (points, positions, savings, journal, social). */}
+      <AuthProvider>
+        <AppProvider>
+          <App />
+        </AppProvider>
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )

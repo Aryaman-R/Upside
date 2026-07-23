@@ -4,6 +4,7 @@ import TopBar from './TopBar.jsx'
 import OnboardingModal from '../onboarding/OnboardingModal.jsx'
 import UrgeModal from '../urge/UrgeModal.jsx'
 import GuidedTour from '../tour/GuidedTour.jsx'
+import RestartDemoButton from './RestartDemoButton.jsx'
 import Icon from '../ui/Icon.jsx'
 import AnimatedNumber from '../ui/AnimatedNumber.jsx'
 import { useApp } from '../../context/AppContext.jsx'
@@ -179,6 +180,7 @@ export default function Layout({ children }) {
               </>
             )}
           </NavLink>
+          <RestartDemoButton />
           <p className="text-center text-[11px] leading-snug text-slate-600">
             Demo — funds are simulated.
             <br />
@@ -227,6 +229,11 @@ export default function Layout({ children }) {
                     {item.label}
                   </NavLink>
                 ))}
+                <div className="my-1 border-t border-white/[0.06]" />
+                <RestartDemoButton
+                  onDone={() => setMoreOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-white/[0.05]"
+                />
               </div>
             </div>
           </>

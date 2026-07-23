@@ -68,28 +68,28 @@ export default function OnboardingModal({ open }) {
                 Welcome to Upside
               </h2>
               <p className="mt-2 text-sm text-slate-300">
-                Bet on yourself, not against your wallet.
+                Win it, or invest it. Never just lose it.
               </p>
             </div>
           </div>
 
           <ul className="space-y-3">
-            <Principle icon="markets" title="Satisfy the itch — safely" delay={0}>
-              Forecast real events, build a portfolio, climb the leaderboard. All with{' '}
-              <strong className="text-slate-200">play points</strong>, never real money.
+            <Principle icon="markets" title="Predict on real events" delay={0}>
+              Forecast sports, crypto, and the news with your{' '}
+              <strong className="text-slate-200">funded balance</strong>. Win, and the profit is yours.
             </Principle>
-            <Principle icon="heart" title="Redirect the money" delay={90}>
-              When a real-money urge hits, log that amount into{' '}
-              <strong className="text-slate-200">Money Kept</strong>. The loss becomes a visible win.
+            <Principle icon="savings" title="Losses fund your future" delay={90}>
+              Lose, and your stake is routed into your{' '}
+              <strong className="text-slate-200">Roth IRA</strong> — money invested, not money gone.
             </Principle>
             <Principle icon="wind" title="Stay in control" delay={180}>
-              Set your own play limits, take a break anytime in Settings, and reach real help lines
-              whenever you need them.
+              Set your own limits, take a break anytime, and reach real help lines whenever you need them.
+              A pause is always one tap away.
             </Principle>
           </ul>
           <div className="flex items-center justify-center gap-2 rounded-lg bg-amber-500/10 p-3 text-center text-xs text-amber-200">
             <Icon name="shield" size={15} className="shrink-0" />
-            <span>No real money is ever wagered, held, or moved. Points have no cash value.</span>
+            <span>This is a demo — every balance and account is simulated. No real money ever moves.</span>
           </div>
           <Button fullWidth onClick={() => setStep(1)}>
             Get started
@@ -145,9 +145,10 @@ export default function OnboardingModal({ open }) {
       {step === 2 && (
         <div className="space-y-4 animate-fade-in">
           <div>
-            <h2 className="text-xl font-bold text-slate-50">Set your daily allowance</h2>
+            <h2 className="text-xl font-bold text-slate-50">Set your daily play allowance</h2>
             <p className="text-sm text-slate-400">
-              Claim this many free play points once a day. A self-paced limit keeps it fun, not chasey.
+              Free play points, claimable once a day, for friendly leaderboard challenges with friends.
+              Your real predictions run on your funded balance — you’ll connect that next.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">

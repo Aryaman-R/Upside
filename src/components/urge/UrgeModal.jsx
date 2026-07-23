@@ -213,8 +213,8 @@ export default function UrgeModal({ open, onClose }) {
           </div>
 
           <p className="text-slate-300">
-            How much were you about to bet? Move it into your{' '}
-            <span className="font-semibold text-brand-300">Money Kept</span> instead —
+            How much were you about to bet elsewhere? Move it into your{' '}
+            <span className="font-semibold text-brand-300">savings</span> instead —
             it’s a win, not a loss.
           </p>
 

@@ -113,7 +113,7 @@ export default function Markets() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((m, i) => (
-            <Reveal key={m.id} delay={i * 60} className="h-full">
+            <Reveal key={m.id} delay={i * 60} className="h-full" {...(i === 0 ? { 'data-tour': 'markets-card' } : {})}>
               <MarketCard
                 market={m}
                 onPick={(market, outcome) => setPick({ market, outcome })}

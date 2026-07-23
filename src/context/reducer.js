@@ -49,6 +49,9 @@ export function createInitialState() {
       dailyStakeLimit: 0,
       cooloffUntil: null,
     },
+    // Guided walkthrough state. status: 'pending' (never offered) | 'offer'
+    // (chained after onboarding, awaiting a yes/no) | 'active' | 'done' | 'skipped'.
+    tour: { status: 'pending', step: 0 },
     // Live-streak + daily-allowance bookkeeping (local day keys, e.g. 2026-06-21).
     lastActive: dayKey(),
     lastAllowanceClaim: null, // null = the first daily bonus is claimable now
@@ -386,6 +389,10 @@ export function reducer(state, action) {
       return {
         ...state,
         onboarded: true,
+        // Chain the guided walkthrough as an OFFER (never forced) once the
+        // user finishes setup — but only the first time through.
+        tour:
+          state.tour?.status === 'pending' ? { status: 'offer', step: 0 } : state.tour,
         user: {
           ...state.user,
           name: name?.trim() || state.user.name,
@@ -397,6 +404,16 @@ export function reducer(state, action) {
         },
       }
     }
+
+    // --- Guided walkthrough -------------------------------------------------
+    case 'START_TOUR':
+      return { ...state, tour: { status: 'active', step: 0 } }
+
+    case 'SET_TOUR_STEP':
+      return { ...state, tour: { ...state.tour, step: Math.max(0, action.payload.step) } }
+
+    case 'END_TOUR':
+      return { ...state, tour: { status: action.payload?.status || 'done', step: 0 } }
 
     case 'UPDATE_PROFILE': {
       const { name, avatar } = action.payload
@@ -623,6 +640,7 @@ export function migrateState(loaded) {
     stats: { ...base.stats, ...loaded.stats },
     social: { ...base.social, ...loaded.social },
     funding: { ...base.funding, ...loaded.funding },
+    tour: { ...base.tour, ...loaded.tour },
     destinations: loaded.destinations || base.destinations,
     defaultDestinationId:
       loaded.defaultDestinationId !== undefined ? loaded.defaultDestinationId : base.defaultDestinationId,

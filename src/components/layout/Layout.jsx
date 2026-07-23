@@ -3,6 +3,7 @@ import { NavLink, Link } from 'react-router-dom'
 import TopBar from './TopBar.jsx'
 import OnboardingModal from '../onboarding/OnboardingModal.jsx'
 import UrgeModal from '../urge/UrgeModal.jsx'
+import GuidedTour from '../tour/GuidedTour.jsx'
 import Icon from '../ui/Icon.jsx'
 import AnimatedNumber from '../ui/AnimatedNumber.jsx'
 import { useApp } from '../../context/AppContext.jsx'
@@ -264,6 +265,9 @@ export default function Layout({ children }) {
 
       {/* Global urge-intervention flow (mounted here so it's reachable anywhere). */}
       <UrgeModal open={urgeOpen} onClose={() => setUrgeOpen(false)} />
+
+      {/* Guided walkthrough — offered after onboarding, replayable from Settings. */}
+      <GuidedTour />
 
       {/* First-run onboarding. */}
       <OnboardingModal open={!onboarded} />

@@ -191,6 +191,23 @@ test('ADD_FRIEND dedupes and REMOVE_FRIEND also clears group rosters', () => {
   assert.ok(!removed.social.groups[0].memberIds.includes('u-quinn'))
 })
 
+test('COMPLETE_ONBOARDING offers the tour once, and START/END drive it', () => {
+  const s0 = createInitialState()
+  assert.equal(s0.tour.status, 'pending')
+  const done = reducer(s0, { type: 'COMPLETE_ONBOARDING', payload: { name: 'Al', avatar: '🦊', dailyAllowance: 500 } })
+  assert.equal(done.onboarded, true)
+  assert.equal(done.tour.status, 'offer') // chained as an offer
+  const started = reducer(done, { type: 'START_TOUR' })
+  assert.equal(started.tour.status, 'active')
+  const stepped = reducer(started, { type: 'SET_TOUR_STEP', payload: { step: 3 } })
+  assert.equal(stepped.tour.step, 3)
+  const ended = reducer(stepped, { type: 'END_TOUR', payload: { status: 'done' } })
+  assert.equal(ended.tour.status, 'done')
+  // Re-finishing onboarding after the tour is done never re-offers it.
+  const again = reducer(ended, { type: 'COMPLETE_ONBOARDING', payload: { name: 'Al' } })
+  assert.equal(again.tour.status, 'done')
+})
+
 test('HYDRATE replaces state with a (migrated) snapshot', () => {
   const s0 = createInitialState()
   const snapshot = { points: 99999, settings: { dailyAllowance: 1000 } }

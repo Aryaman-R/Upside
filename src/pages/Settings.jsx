@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import Card from '../components/ui/Card.jsx'
 import Button from '../components/ui/Button.jsx'
 import Badge from '../components/ui/Badge.jsx'
@@ -7,10 +8,10 @@ import PageHeader from '../components/ui/PageHeader.jsx'
 import AccountCard from '../components/auth/AccountCard.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { AVATARS, ALLOWANCE_OPTIONS } from '../data/avatars.js'
-import { formatPoints, formatDateTime } from '../lib/format.js'
+import { formatPoints, formatUSD, formatDateTime, accountKindLabel } from '../lib/format.js'
 
-// Quick-fill presets for the daily stake cap (the field also takes any value).
-const STAKE_LIMITS = [500, 1000, 2500]
+// Quick-fill presets for the daily stake cap in dollars (the field takes any value).
+const STAKE_LIMITS = [50, 100, 250]
 // "Take a break" cool-off durations.
 const COOLOFF_OPTIONS = [
   { label: '24 hours', hours: 24 },
@@ -41,17 +42,22 @@ function csvCell(v) {
 function exportableState(ctx) {
   const {
     __v, onboarded, user, settings, lastActive, lastAllowanceClaim,
-    points, positions, resolvedMarkets, savings, journal, stats, streak,
+    points, balance, funding, destinations, defaultDestinationId, feesPaid,
+    positions, resolvedMarkets, savings, journal, stats, streak,
   } = ctx
   return {
     __v, onboarded, user, settings, lastActive, lastAllowanceClaim,
-    points, positions, resolvedMarkets, savings, journal, stats, streak,
+    points, balance, funding, destinations, defaultDestinationId, feesPaid,
+    positions, resolvedMarkets, savings, journal, stats, streak,
   }
 }
 
 export default function Settings() {
   const ctx = useApp()
-  const { user, settings, dispatch, cooloffActive, stakedToday, stakeRemaining } = ctx
+  const {
+    user, settings, dispatch, cooloffActive, stakedToday, stakeRemaining,
+    funding, balance, destinations, defaultDestinationId,
+  } = ctx
 
   const [name, setName] = useState(user.name === 'You' ? '' : user.name)
   const [avatar, setAvatar] = useState(user.avatar)
@@ -162,6 +168,89 @@ export default function Settings() {
             {savedFlash && <Badge tone="win">Saved ✓</Badge>}
           </div>
         </Card>
+
+        {/* Replay the guided walkthrough */}
+        <Card className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/12 text-brand-300">
+              <Icon name="bulb" size={18} />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-slate-100">Guided walkthrough</p>
+              <p className="text-xs text-slate-400">Replay the two-minute tour of how Upside works.</p>
+            </div>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => dispatch({ type: 'START_TOUR' })}>
+            Replay walkthrough
+          </Button>
+        </Card>
+      </section>
+
+      {/* ===== Connected accounts ======================================== */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <h2 className="eyebrow">Connected accounts</h2>
+          <Icon name="building" size={14} className="text-brand-400/80" />
+        </div>
+
+        <Card className="space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-100">Money &amp; destinations</h3>
+              <p className="text-sm text-slate-400">
+                Your funding source and where lost predictions get invested. All simulated in this demo.
+              </p>
+            </div>
+            <Link to="/connect">
+              <Button size="sm" variant="outline">Manage</Button>
+            </Link>
+          </div>
+
+          {/* Funding source */}
+          <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2.5 text-sm">
+            <span className="flex items-center gap-2 text-slate-300">
+              <Icon name="building" size={15} className="text-slate-500" />
+              Funding source
+            </span>
+            <span className="text-slate-400">
+              {funding?.connected ? (
+                <>{funding.institution} ••{funding.mask} · <span className="text-slate-500">{formatUSD(balance)} balance</span></>
+              ) : (
+                <span className="text-amber-300">Not connected</span>
+              )}
+            </span>
+          </div>
+
+          {/* Default destination selector */}
+          <div>
+            <p className="mb-2 text-sm font-medium text-slate-200">Where losses go by default</p>
+            {destinations.length === 0 ? (
+              <p className="text-sm text-slate-400">
+                No destination yet — <Link to="/connect" className="text-brand-300 hover:underline">connect a Roth IRA</Link>.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {destinations.map((d) => {
+                  const active = d.id === defaultDestinationId
+                  return (
+                    <button
+                      key={d.id}
+                      onClick={() => dispatch({ type: 'SET_DEFAULT_DESTINATION', payload: { id: d.id } })}
+                      className={[
+                        'rounded-lg border px-3 py-1.5 text-sm transition-colors',
+                        active
+                          ? 'border-brand-400 bg-brand-500/[0.12] text-brand-200'
+                          : 'border-white/10 bg-white/[0.03] text-slate-200 hover:bg-white/[0.06]',
+                      ].join(' ')}
+                    >
+                      {accountKindLabel(d.kind)} <span className="text-slate-500">••{d.mask}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </Card>
       </section>
 
       {/* ===== Your play & safety ======================================== */}
@@ -200,11 +289,11 @@ export default function Settings() {
         </Card>
 
         {/* Play limits & breaks — gently elevated safety surface */}
-        <Card className="space-y-5 ring-1 ring-brand-500/15">
+        <Card className="space-y-5 ring-1 ring-brand-500/15" data-tour="play-limits">
           <div>
-            <h3 className="text-base font-bold text-slate-100">Play limits &amp; breaks</h3>
+            <h3 className="text-base font-bold text-slate-100">Limits &amp; breaks</h3>
             <p className="text-sm text-slate-400">
-              Stay in control. These caps are yours to set — and we enforce them across betting and challenges.
+              Stay in control. These caps are yours to set — enforced across predictions and challenges.
             </p>
           </div>
 
@@ -214,13 +303,14 @@ export default function Settings() {
               <p className="text-sm font-medium text-slate-200">Daily stake limit</p>
               {!noLimit && (
                 <span className="text-xs text-slate-500">
-                  {formatPoints(stakedToday)} / {formatPoints(settings.dailyStakeLimit)} used today
+                  {formatUSD(stakedToday)} / {formatUSD(settings.dailyStakeLimit)} used today
                 </span>
               )}
             </div>
 
             {/* Custom amount — type any value */}
             <div className="relative max-w-xs">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">$</span>
               <input
                 type="number"
                 min="1"
@@ -229,11 +319,8 @@ export default function Settings() {
                 onChange={(e) => onLimitInput(e.target.value)}
                 disabled={noLimit}
                 placeholder="Enter a daily limit"
-                className="w-full rounded-lg border border-white/10 bg-ink-900 p-2.5 pr-12 text-slate-100 placeholder:text-slate-500 focus:border-brand-400 disabled:opacity-40"
+                className="w-full rounded-lg border border-white/10 bg-ink-900 p-2.5 pl-7 text-slate-100 placeholder:text-slate-500 focus:border-brand-400 disabled:opacity-40"
               />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
-                pts
-              </span>
             </div>
 
             {/* Quick-fill presets */}
@@ -250,7 +337,7 @@ export default function Settings() {
                       : 'border-white/10 bg-white/[0.03] text-slate-200 hover:bg-white/[0.06]',
                   ].join(' ')}
                 >
-                  {formatPoints(a)}
+                  {formatUSD(a)}
                 </button>
               ))}
             </div>
@@ -269,8 +356,8 @@ export default function Settings() {
             {!noLimit && (
               <p className="mt-2 text-xs text-slate-500">
                 {stakeRemaining > 0
-                  ? `${formatPoints(stakeRemaining)} points left to stake today.`
-                  : 'Daily stake limit reached — betting paused until tomorrow.'}
+                  ? `${formatUSD(stakeRemaining)} left to stake today.`
+                  : 'Daily stake limit reached — predicting paused until tomorrow.'}
               </p>
             )}
           </div>
@@ -281,7 +368,7 @@ export default function Settings() {
             {cooloffActive ? (
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-400/25 bg-amber-500/[0.08] px-4 py-3">
                 <p className="text-sm text-amber-200">
-                  You’re on a break until <strong>{formatDateTime(settings.cooloffUntil)}</strong>. Betting is paused.
+                  You’re on a break until <strong>{formatDateTime(settings.cooloffUntil)}</strong>. Predicting is paused.
                 </p>
                 <Button size="sm" variant="ghost" onClick={() => dispatch({ type: 'END_COOLOFF' })}>
                   End break early
@@ -302,7 +389,7 @@ export default function Settings() {
                   ))}
                 </div>
                 <p className="mt-2 text-xs text-slate-500">
-                  A cool-off pauses all play-money betting and challenges. The urge tools and Money Kept stay available.
+                  A cool-off pauses all predicting and challenges. The pause tools and your Invested savings stay available.
                 </p>
               </>
             )}
@@ -339,7 +426,7 @@ export default function Settings() {
             <h3 className="text-base font-bold text-rose-200">Danger zone</h3>
           </div>
           <p className="text-sm text-slate-400">
-            Reset clears your points, positions, savings log, and journal. This can’t be undone.
+            Reset clears your balance, positions, invested log, connected accounts, and journal. This can’t be undone.
           </p>
           {!confirmReset ? (
             <Button variant="outline" onClick={() => setConfirmReset(true)}>

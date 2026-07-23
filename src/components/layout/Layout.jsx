@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import TopBar from './TopBar.jsx'
 import OnboardingModal from '../onboarding/OnboardingModal.jsx'
+import UrgeModal from '../urge/UrgeModal.jsx'
 import Icon from '../ui/Icon.jsx'
 import AnimatedNumber from '../ui/AnimatedNumber.jsx'
 import { useApp } from '../../context/AppContext.jsx'
-import { formatPoints, formatUSD } from '../../lib/format.js'
+import { formatUSD } from '../../lib/format.js'
 
 // Sidebar navigation, grouped so the app reads as a real product, not a flat list.
 const NAV_SECTIONS = [
@@ -18,10 +19,11 @@ const NAV_SECTIONS = [
     ],
   },
   {
-    label: 'Progress',
+    label: 'Money',
     items: [
+      { to: '/money-kept', label: 'Invested', icon: 'savings' },
+      { to: '/connect', label: 'Accounts', icon: 'building' },
       { to: '/insights', label: 'Insights', icon: 'insights' },
-      { to: '/money-kept', label: 'Money Kept', icon: 'savings' },
     ],
   },
   {
@@ -38,9 +40,10 @@ const MOBILE_LEFT = [
   { to: '/', label: 'Home', icon: 'dashboard', end: true },
   { to: '/markets', label: 'Markets', icon: 'markets' },
 ]
-const MOBILE_RIGHT = [{ to: '/money-kept', label: 'Kept', icon: 'savings' }]
+const MOBILE_RIGHT = [{ to: '/money-kept', label: 'Invested', icon: 'savings' }]
 const MOBILE_MORE = [
   { to: '/portfolio', label: 'Portfolio', icon: 'portfolio' },
+  { to: '/connect', label: 'Accounts', icon: 'building' },
   { to: '/insights', label: 'Insights', icon: 'insights' },
   { to: '/social', label: 'Friends', icon: 'social' },
   { to: '/leaderboard', label: 'Leaderboard', icon: 'leaderboard' },
@@ -71,8 +74,9 @@ function BrandMark() {
 }
 
 export default function Layout({ children }) {
-  const { points, savings, onboarded } = useApp()
+  const { balance, savings, onboarded } = useApp()
   const [moreOpen, setMoreOpen] = useState(false)
+  const [urgeOpen, setUrgeOpen] = useState(false)
 
   return (
     <div className="min-h-screen md:flex">
@@ -85,15 +89,15 @@ export default function Layout({ children }) {
         {/* Balances summary */}
         <div className="mx-4 mb-4 grid grid-cols-2 gap-2">
           <div className="surface-muted px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-slate-500">Points</p>
+            <p className="text-[10px] uppercase tracking-wide text-slate-500">Balance</p>
             <AnimatedNumber
-              value={points}
-              format={formatPoints}
+              value={balance}
+              format={formatUSD}
               className="text-sm font-semibold text-slate-100"
             />
           </div>
           <div className="surface-muted px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-slate-500">Kept</p>
+            <p className="text-[10px] uppercase tracking-wide text-slate-500">Invested</p>
             <AnimatedNumber
               value={savings.total}
               format={formatUSD}
@@ -150,6 +154,15 @@ export default function Layout({ children }) {
         </nav>
 
         <div className="mt-auto space-y-3 p-4">
+          {/* Always-available urge intervention — never locks, even on a break. */}
+          <button
+            data-tour="take-a-pause"
+            onClick={() => setUrgeOpen(true)}
+            className="flex w-full items-center gap-2.5 rounded-lg border border-brand-500/25 bg-brand-500/[0.08] px-3 py-2 text-sm font-medium text-brand-200 transition-colors hover:bg-brand-500/[0.14]"
+          >
+            <Icon name="wind" size={17} className="text-brand-300" />
+            Take a pause
+          </button>
           <NavLink to="/settings" className={navClass}>
             {({ isActive }) => (
               <>
@@ -163,7 +176,7 @@ export default function Layout({ children }) {
             )}
           </NavLink>
           <p className="text-center text-[11px] leading-snug text-slate-600">
-            Play money only. No real wagering.
+            Demo — funds are simulated.
             <br />
             Help:{' '}
             <a href="tel:1-800-426-2537" className="text-slate-500 hover:text-slate-400">
@@ -238,6 +251,19 @@ export default function Layout({ children }) {
           </button>
         </div>
       </nav>
+
+      {/* Floating "Take a pause" pill (mobile) — sits above the bottom tab bar. */}
+      <button
+        onClick={() => setUrgeOpen(true)}
+        aria-label="Take a pause"
+        className="fixed bottom-20 right-4 z-40 flex items-center gap-2 rounded-full border border-brand-500/30 bg-ink-900/90 px-4 py-2.5 text-sm font-semibold text-brand-200 shadow-pop backdrop-blur-md md:hidden"
+      >
+        <Icon name="wind" size={16} className="text-brand-300" />
+        Pause
+      </button>
+
+      {/* Global urge-intervention flow (mounted here so it's reachable anywhere). */}
+      <UrgeModal open={urgeOpen} onClose={() => setUrgeOpen(false)} />
 
       {/* First-run onboarding. */}
       <OnboardingModal open={!onboarded} />

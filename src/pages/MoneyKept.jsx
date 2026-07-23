@@ -9,18 +9,21 @@ import AnimatedNumber from '../components/ui/AnimatedNumber.jsx'
 import Reveal from '../components/ui/Reveal.jsx'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import { useApp } from '../context/AppContext.jsx'
-import { formatUSD, formatDate } from '../lib/format.js'
+import { formatUSD, formatDate, accountKindLabel } from '../lib/format.js'
+import { Link } from 'react-router-dom'
+import Icon from '../components/ui/Icon.jsx'
 
 // Suggested redirect amounts mirroring common bet sizes.
 const QUICK_AMOUNTS = [10, 25, 50, 100]
 
-// Little milestones to make the savings total feel tangible.
+// Little milestones to make the invested total feel tangible.
 function milestoneFor(total) {
-  if (total >= 500) return 'A month of groceries. Seriously.'
-  if (total >= 250) return 'That’s a nice pair of shoes you actually keep.'
-  if (total >= 100) return 'A great dinner out — on you, for you.'
-  if (total >= 50) return 'A full tank of gas stayed in your pocket.'
-  return 'Every dollar here is a bet you didn’t lose.'
+  if (total >= 1000) return 'Four figures invested in your future self. Real momentum.'
+  if (total >= 500) return 'That’s a serious head start compounding for you.'
+  if (total >= 250) return 'A month of a Roth IRA contribution, from losses alone.'
+  if (total >= 100) return 'Money that used to vanish is now working for you.'
+  if (total >= 50) return 'A full tank of gas, invested instead of gone.'
+  return 'Every dollar here is a loss that became a gain.'
 }
 
 // Start of the current month, for the "this month" tile.
@@ -30,7 +33,7 @@ function startOfMonth() {
 }
 
 export default function MoneyKept() {
-  const { savings, savingsProgress, dispatch } = useApp()
+  const { savings, savingsProgress, destinations, defaultDest, dispatch } = useApp()
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
   const [goalInput, setGoalInput] = useState('')
@@ -67,9 +70,9 @@ export default function MoneyKept() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Money Kept"
-        title="The money you kept"
-        subtitle="Every dollar you were tempted to gamble, redirected into real savings."
+        eyebrow="Invested"
+        title="Money you kept — and grew"
+        subtitle="Every lost prediction and redirected urge, routed into your real savings and retirement accounts."
       />
 
       {/* Hero total + progress — the centerpiece */}
@@ -84,15 +87,15 @@ export default function MoneyKept() {
             aria-hidden
           />
           <div className="relative">
-            <p className="eyebrow mb-3 text-center">Saved by not gambling</p>
+            <p className="eyebrow mb-3 text-center">Invested, not lost</p>
             {isEmpty ? (
               <div className="space-y-2">
                 <p className="font-display text-5xl font-black tracking-tightish text-gradient-brand sm:text-6xl">
                   $0
                 </p>
                 <p className="mx-auto max-w-sm text-sm text-slate-300">
-                  This is where it starts. Log the next impulse below and watch a real
-                  number grow — money that stays yours.
+                  This is where it starts. Every losing prediction lands here, and you can redirect an
+                  urge below too — money that goes into your future instead of the house’s pocket.
                 </p>
               </div>
             ) : (
@@ -156,9 +159,39 @@ export default function MoneyKept() {
         </Card>
       </Reveal>
 
+      {/* Where it's invested — the connected destination accounts */}
+      {destinations.length > 0 && (
+        <Reveal>
+          <Card className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-slate-100">Where it’s invested</h2>
+              <Link to="/connect" className="text-sm text-brand-300 hover:underline">
+                Manage accounts →
+              </Link>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {destinations.map((d) => (
+                <div key={d.id} className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500/12 text-brand-300">
+                      <Icon name="building" size={15} />
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium text-slate-100">{accountKindLabel(d.kind)}</p>
+                      <p className="text-xs text-slate-500">{d.institution} ••{d.mask}</p>
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums text-brand-200">{formatUSD(d.balance)}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </Reveal>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-3">
         <Reveal delay={0}>
-          <StatTile label="Redirects" value={count} icon="refresh" tone="brand" animate />
+          <StatTile label="Moves" value={count} icon="refresh" tone="brand" animate />
         </Reveal>
         <Reveal delay={60}>
           <StatTile
@@ -185,10 +218,11 @@ export default function MoneyKept() {
 
       {/* Add a redirect */}
       <Reveal>
-        <Card className="space-y-3">
+        <Card className="space-y-3" data-tour="money-kept-form">
           <h2 className="text-lg font-bold text-slate-100">Redirect an impulse</h2>
           <p className="text-sm text-slate-400">
-            About to put real money on a bet? Log it here instead — it stays yours.
+            About to put money on a bet somewhere else? Move it into your{' '}
+            {defaultDest ? accountKindLabel(defaultDest.kind) : 'savings'} instead — no fee, all yours.
           </p>
           <div className="flex flex-wrap gap-2">
             {QUICK_AMOUNTS.map((q) => {
@@ -254,8 +288,8 @@ export default function MoneyKept() {
           <Card padding="none">
             <EmptyState
               icon="savings"
-              title="No redirects yet"
-              body="Your first one is the hardest — and the best. Log an impulse above and it becomes a number you can watch grow."
+              title="Nothing invested yet"
+              body="Your first one is the hardest — and the best. Redirect an impulse above, or let a lost prediction land here."
             />
           </Card>
         ) : (
@@ -270,7 +304,11 @@ export default function MoneyKept() {
                   <p className="truncate text-sm text-slate-200">
                     {e.note || 'Redirected impulse'}
                   </p>
-                  <p className="text-xs text-slate-500">{formatDate(e.createdAt)}</p>
+                  <p className="text-xs text-slate-500">
+                    {formatDate(e.createdAt)}
+                    {' · '}
+                    {e.kind === 'loss' ? 'From a lost prediction' : 'Redirected urge'}
+                  </p>
                 </div>
                 <Badge tone="win">+{formatUSD(e.amount)}</Badge>
               </Reveal>

@@ -11,10 +11,10 @@ import AnimatedNumber from '../components/ui/AnimatedNumber.jsx'
 import { Link } from 'react-router-dom'
 import { MARKETS, MARKET_CATEGORIES } from '../data/markets.js'
 import { useApp } from '../context/AppContext.jsx'
-import { formatPoints, formatDateTime } from '../lib/format.js'
+import { formatUSD, formatDateTime } from '../lib/format.js'
 
 export default function Markets() {
-  const { points, cooloffActive, settings, dispatch, stakeRemaining } = useApp()
+  const { balance, cooloffActive, settings, dispatch, stakeRemaining } = useApp()
   const [category, setCategory] = useState('All')
   const [pick, setPick] = useState({ market: null, outcome: null })
 
@@ -26,20 +26,19 @@ export default function Markets() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Play-money prediction markets"
+        eyebrow="Prediction markets"
         title="Markets"
-        subtitle="Forecast real events with play points. No money, all of the thrill."
+        subtitle="Forecast real events. Win and it's yours; lose and it's invested — never gone."
         action={
           <div className="flex items-center gap-2 rounded-full border border-brand-500/25 bg-brand-500/10 px-4 py-2 shadow-glow-sm">
             <Icon name="coins" size={16} className="text-brand-300" />
             <span className="text-xs font-medium uppercase tracking-wide text-brand-300/80">Balance</span>
             <AnimatedNumber
-              value={points}
-              format={formatPoints}
+              value={balance}
+              format={formatUSD}
               as="span"
               className="text-sm font-bold text-brand-200"
             />
-            <span className="text-xs font-medium text-brand-300/70">pts</span>
           </div>
         }
       />
@@ -48,9 +47,9 @@ export default function Markets() {
       {cooloffActive && (
         <Card className="flex flex-wrap items-center justify-between gap-3 border-amber-400/25 bg-amber-500/[0.07]">
           <div>
-            <p className="text-sm font-semibold text-amber-200">You’re on a break — betting is paused.</p>
+            <p className="text-sm font-semibold text-amber-200">You’re on a break — predicting is paused.</p>
             <p className="text-xs text-slate-400">
-              Until {formatDateTime(settings.cooloffUntil)}. The urge tools and Money Kept stay open.
+              Until {formatDateTime(settings.cooloffUntil)}. The pause tools and Invested stay open.
             </p>
           </div>
           <Button size="sm" variant="ghost" onClick={() => dispatch({ type: 'END_COOLOFF' })}>
@@ -64,9 +63,9 @@ export default function Markets() {
         <p className="text-xs text-slate-500">
           Daily stake limit:{' '}
           {stakeRemaining > 0 ? (
-            <>{formatPoints(stakeRemaining)} of {formatPoints(settings.dailyStakeLimit)} pts left today.</>
+            <>{formatUSD(stakeRemaining)} of {formatUSD(settings.dailyStakeLimit)} left today.</>
           ) : (
-            <>reached for today — betting resumes tomorrow. Adjust in <Link to="/settings" className="text-brand-300 hover:underline">Settings</Link>.</>
+            <>reached for today — predicting resumes tomorrow. Adjust in <Link to="/settings" className="text-brand-300 hover:underline">Settings</Link>.</>
           )}
         </p>
       )}

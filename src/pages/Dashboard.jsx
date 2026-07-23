@@ -16,26 +16,28 @@ import {
   formatPoints,
   formatUSD,
   formatProbability,
-  potentialPayout,
+  payoutDollars,
 } from '../lib/format.js'
 
 export default function Dashboard() {
   const {
     user,
     points,
+    balance,
     streak,
     stats,
     winRate,
     openPositions,
-    pointsAtStake,
+    atStake,
     savings,
     savingsProgress,
     canClaimDaily,
+    accountsConnected,
     settings,
     dispatch,
   } = useApp()
 
-  // Current standing vs. the mock field.
+  // Current standing vs. the mock field (play-points leaderboard).
   const rank = useMemo(() => {
     const all = [...MOCK_PLAYERS.map((p) => p.points), points].sort((a, b) => b - a)
     return all.indexOf(points) + 1
@@ -68,12 +70,12 @@ export default function Dashboard() {
             </div>
             <div>
               <h1 className="text-gradient font-display text-display-sm font-bold tracking-display md:text-display">
-                Chase the forecast,
-                <br className="hidden sm:block" /> not the loss.
+                Win it, or invest it.
+                <br className="hidden sm:block" /> Never just lose it.
               </h1>
               <p className="mt-3 max-w-xl text-sm text-slate-400 sm:text-base">
-                Bet play points on real events, and turn every real-money urge into
-                money you actually keep.
+                Predict on real events with your funded balance. Win and it’s yours to keep — lose and
+                your stake goes into your Roth IRA, not the house’s pocket.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -82,7 +84,7 @@ export default function Dashboard() {
               </Link>
               <Link to="/money-kept">
                 <Button size="lg" variant="outline">
-                  View savings
+                  View invested
                 </Button>
               </Link>
             </div>
@@ -90,7 +92,29 @@ export default function Dashboard() {
         </section>
       </Reveal>
 
-      {/* Daily allowance nudge */}
+      {/* Connect-accounts nudge — the setup that powers the whole model. */}
+      {!accountsConnected && (
+        <Reveal delay={40}>
+          <Card className="flex flex-wrap items-center justify-between gap-3 border-brand-500/30 bg-brand-500/[0.07] shadow-glow-sm">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-brand-300">
+                <Icon name="building" size={18} />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-slate-100">Finish connecting your accounts.</p>
+                <p className="text-xs text-slate-400">
+                  Link a funding source and a Roth IRA so losses turn into savings. (Simulated — no real login.)
+                </p>
+              </div>
+            </div>
+            <Link to="/connect">
+              <Button size="sm">Connect accounts</Button>
+            </Link>
+          </Card>
+        </Reveal>
+      )}
+
+      {/* Daily allowance nudge (play points for friendly challenges) */}
       {canClaimDaily && (
         <Reveal delay={60}>
           <Card className="flex animate-pop flex-wrap items-center justify-between gap-3 border-brand-500/30 bg-brand-500/[0.07] shadow-glow-sm">
@@ -116,15 +140,15 @@ export default function Dashboard() {
       <Reveal delay={120}>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatTile
-            label="Points balance"
-            value={points}
-            sub={`${formatPoints(pointsAtStake)} pts at stake`}
+            label="Balance"
+            value={balance}
+            sub={`${formatUSD(atStake)} at stake`}
             icon="coins"
             animate
-            format={formatPoints}
+            format={formatUSD}
           />
           <StatTile
-            label="Money kept"
+            label="Invested"
             value={savings.total}
             sub={`Goal ${formatUSD(savings.goal)}`}
             icon="savings"
@@ -150,10 +174,10 @@ export default function Dashboard() {
 
       <Reveal delay={180}>
         <div className="grid gap-4 lg:grid-cols-2">
-          {/* Savings progress — elevated */}
+          {/* Invested progress — elevated */}
           <Card variant="glow" className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-100">Money Kept</h2>
+              <h2 className="text-lg font-bold text-slate-100">Invested</h2>
               <Link to="/money-kept" className="text-sm text-brand-300 hover:underline">
                 Details →
               </Link>
@@ -166,7 +190,7 @@ export default function Dashboard() {
                 className="text-3xl font-extrabold text-brand-300 sm:text-4xl"
               />
               <p className="text-sm text-slate-400">
-                saved instead of gambled across {savings.entries.length} redirects
+                invested from losses &amp; redirects across {savings.entries.length} moves
               </p>
             </div>
             <ProgressBar value={savingsProgress} tone="brand" glow />
@@ -186,8 +210,8 @@ export default function Dashboard() {
             {openPositions.length === 0 ? (
               <EmptyState
                 icon="portfolio"
-                title="No open bets yet"
-                body="Find a market you have a read on and stake some play points — no real money, ever."
+                title="No open predictions yet"
+                body="Find a market you have a read on and make a prediction — win it, or invest it."
                 action={
                   <Link to="/markets">
                     <Button size="sm">Explore markets</Button>
@@ -209,10 +233,10 @@ export default function Dashboard() {
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-sm font-semibold text-slate-100 tabular-nums">
-                        {formatPoints(pos.stake)} pts
+                        {formatUSD(pos.stake)}
                       </p>
                       <p className="text-xs text-brand-300 tabular-nums">
-                        →{formatPoints(potentialPayout(pos.stake, pos.price))}
+                        →{formatUSD(payoutDollars(pos.stake, pos.price))}
                       </p>
                     </div>
                   </li>
@@ -232,10 +256,10 @@ export default function Dashboard() {
             </span>
             <div>
               <p className="text-sm font-semibold text-slate-100">
-                No real money is ever at risk here.
+                Built so a loss is never just a loss.
               </p>
               <p className="text-xs text-slate-300">
-                Points are play-only. If gambling stops being fun, help is free & 24/7.
+                This is a demo — funds are simulated. If the urge stops feeling like fun, help is free &amp; 24/7.
               </p>
             </div>
           </div>

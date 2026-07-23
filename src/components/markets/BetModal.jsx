@@ -6,30 +6,33 @@ import Badge from '../ui/Badge.jsx'
 import Icon from '../ui/Icon.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import {
-  formatPoints,
+  formatUSD,
   formatProbability,
-  potentialPayout,
+  payoutDollars,
+  profitDollars,
   priceToMultiplier,
+  lossSplit,
+  accountKindLabel,
   daysUntil,
   marketStatus,
 } from '../../lib/format.js'
 
-// Quick-stake chips so betting is one tap, like the apps this replaces — but
-// the "currency" is always play points.
-const QUICK_STAKES = [100, 250, 500, 1000]
+// Quick-stake chips in dollars — betting is one tap, like the apps this replaces.
+const QUICK_STAKES = [10, 25, 50, 100]
 
-// A small, persistent reassurance chip that play points are never real money.
-function PlayMoneyChip() {
+// The signature reassurance: with Upside, a losing stake isn't gone — it's
+// invested. Either outcome keeps the money yours.
+function CantLoseChip({ destLabel }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-400">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-500/20 bg-brand-500/[0.06] px-3 py-1 text-xs text-brand-200/90">
       <Icon name="shield" size={13} className="text-brand-300/80" />
-      Play points · no real money at stake
+      Win it or invest it in your {destLabel} — either way it stays yours
     </span>
   )
 }
 
 export default function BetModal({ open, onClose, market, outcome }) {
-  const { points, dispatch, cooloffActive, stakeRemaining } = useApp()
+  const { balance, defaultDest, dispatch, cooloffActive, stakeRemaining } = useApp()
   const [stake, setStake] = useState('')
   const [placed, setPlaced] = useState(false)
 
@@ -44,14 +47,16 @@ export default function BetModal({ open, onClose, market, outcome }) {
 
   const status = marketStatus(market.closeDate)
   const closed = status === 'closed'
-  // Points are whole numbers — floor any typed value so the balance never drifts.
-  const numericStake = Math.floor(Number(stake) || 0)
-  const tooMuch = numericStake > points
+  const numericStake = Number(stake) || 0
+  const tooMuch = numericStake > balance
   const overLimit = numericStake > stakeRemaining
   const valid = numericStake > 0 && !tooMuch && !closed && !cooloffActive && !overLimit
-  const payout = potentialPayout(numericStake, outcome.price)
+  const payout = payoutDollars(numericStake, outcome.price)
+  const profit = profitDollars(numericStake, outcome.price)
+  const { routed, fee } = lossSplit(numericStake)
+  const destLabel = defaultDest ? accountKindLabel(defaultDest.kind) : 'savings'
   // The most a single bet may stake right now (balance, capped by any daily limit).
-  const maxStake = Math.max(0, Math.min(points, stakeRemaining))
+  const maxStake = Math.max(0, Math.min(balance, stakeRemaining))
 
   function placeBet() {
     if (!valid) return
@@ -70,19 +75,15 @@ export default function BetModal({ open, onClose, market, outcome }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Place a play-money bet">
+    <Modal open={open} onClose={onClose} title="Make a prediction">
       <div className="space-y-4">
         <div className="surface-muted p-4">
           <p className="text-sm text-slate-300">{market.question}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge tone="brand">{outcome.label}</Badge>
-            <span className="text-xs text-slate-400">
-              {formatProbability(outcome.price)} implied
-            </span>
+            <span className="text-xs text-slate-400">{formatProbability(outcome.price)} implied</span>
             <span className="text-xs text-slate-500">·</span>
-            <span className="text-xs text-slate-500">
-              {priceToMultiplier(outcome.price).toFixed(2)}x
-            </span>
+            <span className="text-xs text-slate-500">{priceToMultiplier(outcome.price).toFixed(2)}x</span>
           </div>
           {status === 'closing-soon' && !closed && (
             <p className="mt-2 text-xs text-amber-300">⏳ {daysUntil(market.closeDate)} — get in before it locks.</p>
@@ -91,13 +92,13 @@ export default function BetModal({ open, onClose, market, outcome }) {
 
         {closed && (
           <div className="rounded-lg bg-white/5 p-3 text-center text-sm text-slate-400">
-            This market has closed and is no longer accepting bets.
+            This market has closed and is no longer accepting predictions.
           </div>
         )}
 
         {cooloffActive && !closed && (
           <div className="rounded-lg border border-amber-400/25 bg-amber-500/[0.08] p-3 text-center text-sm text-amber-200">
-            You’re on a self-imposed break — betting is paused. You can end it early in Settings.
+            You’re on a self-imposed break — predicting is paused. You can end it early in Settings.
           </div>
         )}
 
@@ -108,16 +109,16 @@ export default function BetModal({ open, onClose, market, outcome }) {
                 <Icon name="check" size={22} strokeWidth={2.5} />
               </span>
               <p className="text-brand-100">
-                Bet placed: <strong className="tabular-nums">{formatPoints(numericStake)}</strong> points on{' '}
+                Prediction placed: <strong className="tabular-nums">{formatUSD(numericStake)}</strong> on{' '}
                 <strong>{outcome.label}</strong>.
               </p>
               <p className="mt-1 text-sm text-slate-400">
-                If this resolves your way, you’ll have{' '}
-                <span className="tabular-nums font-semibold text-slate-200">{formatPoints(payout)}</span> points.
+                Win → <span className="font-semibold text-emerald-300">{formatUSD(payout)}</span> back. Lose →{' '}
+                <span className="font-semibold text-brand-300">{formatUSD(routed)}</span> into your {destLabel}.
               </p>
             </div>
             <div className="flex justify-center">
-              <PlayMoneyChip />
+              <CantLoseChip destLabel={destLabel} />
             </div>
             <div className="space-y-2">
               <Link
@@ -137,29 +138,30 @@ export default function BetModal({ open, onClose, market, outcome }) {
           <>
             <div>
               <div className="mb-1 flex items-center justify-between">
-                <label className="text-sm font-medium text-slate-200">Stake (points)</label>
-                <span className="text-xs text-slate-400">
-                  Balance: {formatPoints(points)}
-                </span>
+                <label className="text-sm font-medium text-slate-200">Stake</label>
+                <span className="text-xs text-slate-400">Balance: {formatUSD(balance)}</span>
               </div>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                inputMode="numeric"
-                value={stake}
-                onChange={(e) => setStake(e.target.value)}
-                placeholder="Enter points to stake"
-                className="input"
-              />
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-400">$</span>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputMode="decimal"
+                  value={stake}
+                  onChange={(e) => setStake(e.target.value)}
+                  placeholder="Enter an amount"
+                  className="input pl-7"
+                />
+              </div>
               {tooMuch && (
                 <p className="mt-1 text-xs text-rose-300">
-                  You only have {formatPoints(points)} points.
+                  Your balance is {formatUSD(balance)}. <Link to="/connect" className="underline">Add funds</Link>.
                 </p>
               )}
               {!tooMuch && overLimit && (
                 <p className="mt-1 text-xs text-amber-300">
-                  Daily stake limit reached — {formatPoints(Math.max(0, stakeRemaining))} pts left today.
+                  Daily stake limit reached — {formatUSD(Math.max(0, stakeRemaining))} left today.
                 </p>
               )}
               <div className="mt-2 flex flex-wrap gap-2">
@@ -170,7 +172,7 @@ export default function BetModal({ open, onClose, market, outcome }) {
                     disabled={q > maxStake}
                     className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-200 hover:bg-white/15 disabled:opacity-40"
                   >
-                    {formatPoints(q)}
+                    {formatUSD(q)}
                   </button>
                 ))}
                 <button
@@ -183,19 +185,29 @@ export default function BetModal({ open, onClose, market, outcome }) {
               </div>
             </div>
 
-            {/* Calm receipt — not a jackpot. */}
-            <div className="flex items-center justify-between rounded-xl border border-white/5 bg-ink-900/60 px-4 py-3">
-              <span className="text-sm text-slate-400">If this resolves your way</span>
-              <span className="tabular-nums font-semibold text-slate-100">
-                {formatPoints(payout)} pts
-              </span>
+            {/* Both-outcomes receipt — the heart of "you can't really lose". */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-3">
+                <p className="flex items-center gap-1.5 text-xs text-emerald-300">
+                  <Icon name="trendingUp" size={13} /> If you win
+                </p>
+                <p className="mt-1 text-lg font-bold tabular-nums text-emerald-200">{formatUSD(payout)}</p>
+                <p className="text-xs text-slate-500">+{formatUSD(profit)} to balance</p>
+              </div>
+              <div className="rounded-xl border border-brand-500/20 bg-brand-500/[0.06] px-3 py-3">
+                <p className="flex items-center gap-1.5 text-xs text-brand-300">
+                  <Icon name="savings" size={13} /> If you lose
+                </p>
+                <p className="mt-1 text-lg font-bold tabular-nums text-brand-200">{formatUSD(routed)}</p>
+                <p className="text-xs text-slate-500">to your {destLabel} · {formatUSD(fee)} fee</p>
+              </div>
             </div>
 
             <Button fullWidth onClick={placeBet} disabled={!valid}>
-              Confirm play-money bet
+              Place prediction
             </Button>
             <div className="flex justify-center">
-              <PlayMoneyChip />
+              <CantLoseChip destLabel={destLabel} />
             </div>
           </>
         )}

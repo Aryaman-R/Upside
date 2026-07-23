@@ -23,10 +23,10 @@ const betPayload = (over = {}) => ({
   ...over,
 })
 
-test('PLACE_BET deducts stake and opens a position', () => {
+test('PLACE_BET deducts stake from the balance and opens a position', () => {
   const s0 = createInitialState()
   const s1 = reducer(s0, { type: 'PLACE_BET', payload: betPayload({ stake: 200 }) })
-  assert.equal(s1.points, s0.points - 200)
+  assert.equal(s1.balance, s0.balance - 200)
   assert.equal(s1.positions.length, s0.positions.length + 1)
   assert.equal(s1.positions[0].status, 'open')
   assert.equal(s1.stakedToday.amount, 200)
@@ -34,7 +34,7 @@ test('PLACE_BET deducts stake and opens a position', () => {
 
 test('PLACE_BET refuses to overdraw the balance', () => {
   const s0 = createInitialState()
-  const s1 = reducer(s0, { type: 'PLACE_BET', payload: betPayload({ stake: s0.points + 1 }) })
+  const s1 = reducer(s0, { type: 'PLACE_BET', payload: betPayload({ stake: s0.balance + 1 }) })
   assert.equal(s1, s0) // unchanged
 })
 
@@ -67,36 +67,64 @@ test('cool-off blocks new bets until it ends', () => {
   assert.notEqual(s2, s) // now allowed
 })
 
-test('RESOLVE_MARKET pays winners at 1/price and records the result', () => {
+test('RESOLVE_MARKET pays winners at 1/price into the balance', () => {
   let s = createInitialState()
   s = reducer(s, { type: 'PLACE_BET', payload: betPayload({ marketId: 'mkt-x', stake: 100, price: 0.25 }) })
-  const before = s.points
+  const before = s.balance
   const winsBefore = s.stats.wins
   const s2 = reducer(s, { type: 'RESOLVE_MARKET', payload: { marketId: 'mkt-x', winningOutcomeId: 'yes' } })
-  // 0.25 price → 4× payout → 400 points returned.
-  assert.equal(s2.points, before + 400)
+  // 0.25 price → 4× payout → $400 back into the balance.
+  assert.equal(s2.balance, before + 400)
   assert.equal(s2.stats.wins, winsBefore + 1)
   assert.equal(s2.resolvedMarkets['mkt-x'], 'yes')
   assert.equal(s2.positions[0].status, 'won')
 })
 
-test('RESOLVE_MARKET forfeits losing stakes', () => {
+test('RESOLVE_MARKET routes a lost stake into savings minus the fee', () => {
   let s = createInitialState()
   s = reducer(s, { type: 'PLACE_BET', payload: betPayload({ marketId: 'mkt-x', outcomeId: 'yes', stake: 100 }) })
-  const before = s.points
+  const balanceBefore = s.balance
+  const investedBefore = s.savings.total
+  const destBefore = s.destinations[0].balance
   const lossesBefore = s.stats.losses
   const s2 = reducer(s, { type: 'RESOLVE_MARKET', payload: { marketId: 'mkt-x', winningOutcomeId: 'no' } })
-  assert.equal(s2.points, before) // no refund
+  assert.equal(s2.balance, balanceBefore) // stake already deducted; no refund
+  assert.equal(s2.savings.total, investedBefore + 95) // $100 stake − 5% fee → $95 invested
+  assert.equal(s2.destinations[0].balance, destBefore + 95) // routed into the default destination
+  assert.equal(s2.feesPaid, 12.37) // 7.37 seed + 5.00 fee
   assert.equal(s2.stats.losses, lossesBefore + 1)
   assert.equal(s2.positions[0].status, 'lost')
+  assert.equal(s2.savings.entries[0].kind, 'loss')
 })
 
-test('ADD_SAVINGS increments the total and logs an entry; ignores non-positive', () => {
+test('ADD_SAVINGS invests into the default destination and logs an entry', () => {
   const s0 = createInitialState()
+  const destBefore = s0.destinations[0].balance
   const s1 = reducer(s0, { type: 'ADD_SAVINGS', payload: { amount: 40, note: 'skipped' } })
   assert.equal(s1.savings.total, s0.savings.total + 40)
   assert.equal(s1.savings.entries.length, s0.savings.entries.length + 1)
+  assert.equal(s1.savings.entries[0].kind, 'redirect')
+  assert.equal(s1.destinations[0].balance, destBefore + 40) // no fee on a manual redirect
   assert.equal(reducer(s0, { type: 'ADD_SAVINGS', payload: { amount: 0 } }), s0)
+})
+
+test('funding + destinations: connect, fund, set default, remove', () => {
+  let s = createInitialState()
+  // Fund the balance from the connected source.
+  const bal = s.balance
+  s = reducer(s, { type: 'FUND_BALANCE', payload: { amount: 250 } })
+  assert.equal(s.balance, bal + 250)
+  // Connect a second destination; it is not the default automatically.
+  s = reducer(s, { type: 'CONNECT_DESTINATION', payload: { kind: 'hysa', institution: 'Ally', mask: '1234' } })
+  assert.equal(s.destinations.length, 2)
+  assert.equal(s.defaultDestinationId, 'dest-roth')
+  const newId = s.destinations[1].id
+  // Promote it to default, then remove the original.
+  s = reducer(s, { type: 'SET_DEFAULT_DESTINATION', payload: { id: newId } })
+  assert.equal(s.defaultDestinationId, newId)
+  s = reducer(s, { type: 'REMOVE_DESTINATION', payload: { id: newId } })
+  assert.equal(s.destinations.length, 1)
+  assert.equal(s.defaultDestinationId, 'dest-roth') // falls back to the remaining one
 })
 
 test('SET_SAVINGS_GOAL clamps to a minimum of 1', () => {

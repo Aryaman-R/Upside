@@ -9,16 +9,16 @@ import { formatPoints, formatUSD } from '../../lib/format.js'
 // Sticky context bar shown above every page: live balances, engagement streak,
 // the once-a-day play-point allowance, and the user's avatar (→ Settings).
 export default function TopBar() {
-  const { user, points, savings, streak, canClaimDaily, settings, dispatch, syncStatus, cloudConfigured, cloudUser } =
+  const { user, balance, savings, streak, canClaimDaily, settings, dispatch, syncStatus, cloudConfigured, cloudUser } =
     useApp()
 
   return (
     <header className="relative z-30 -mx-4 mb-6 border-b border-white/[0.06] bg-ink-950/80 px-4 py-2.5 backdrop-blur-md md:sticky md:top-0 md:-mx-8 md:px-8">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
         {/* Balance chips */}
-        <div className="flex items-center gap-2">
-          <Chip icon="coins" label="Points" value={points} format={formatPoints} />
-          <Chip icon="savings" label="Kept" value={savings.total} format={formatUSD} tone="brand" />
+        <div className="flex items-center gap-2" data-tour="topbar-balances">
+          <Chip icon="coins" label="Balance" value={balance} format={formatUSD} />
+          <Chip icon="savings" label="Invested" value={savings.total} format={formatUSD} tone="brand" />
           <Chip icon="flame" label="Streak" value={streak} format={(n) => Math.round(n)} tone="amber" hideOnMobile />
         </div>
 

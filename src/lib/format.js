@@ -42,6 +42,44 @@ export function potentialPayout(stake, price) {
   return Math.round(stake * priceToMultiplier(price))
 }
 
+/** Round to cents — dollar amounts never drift. */
+export function round2(n) {
+  return Math.round((Number(n) || 0) * 100) / 100
+}
+
+/** Total dollars returned if a funded prediction wins (stake + profit). */
+export function payoutDollars(stake, price) {
+  return round2(stake * priceToMultiplier(price))
+}
+
+/** Just the profit (dollars) on a winning funded prediction. */
+export function profitDollars(stake, price) {
+  return round2(payoutDollars(stake, price) - stake)
+}
+
+/**
+ * On a lost stake, the split between what's routed into your savings/retirement
+ * account and the small platform fee. `feeRate` defaults to 5%.
+ */
+export function lossSplit(stake, feeRate = 0.05) {
+  const fee = round2(stake * feeRate)
+  return { routed: round2(stake - fee), fee }
+}
+
+// Human labels + short blurbs for the connected-account kinds.
+export const ACCOUNT_KINDS = {
+  roth_ira: { label: 'Roth IRA', blurb: 'Tax-free growth for retirement' },
+  traditional_ira: { label: 'Traditional IRA', blurb: 'Tax-deferred retirement savings' },
+  '401k': { label: '401(k)', blurb: 'Employer retirement plan' },
+  '529': { label: '529 plan', blurb: 'Tax-advantaged education savings' },
+  hysa: { label: 'High-yield savings', blurb: 'Flexible, higher-interest savings' },
+}
+
+/** Display label for an account kind, falling back to the raw value. */
+export function accountKindLabel(kind) {
+  return ACCOUNT_KINDS[kind]?.label || kind
+}
+
 /** Human-friendly date, e.g. "Jul 4, 2026". */
 export function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', {

@@ -2,15 +2,31 @@
 // tested without React. Everything here is a pure function of (state, action)
 // — no DOM, no React, no storage. See reducer.test.js for coverage.
 //
-// NOTE: There is intentionally NO real money anywhere in this state. "points"
-// are a play currency; "savings" is a SIMULATED tracker of dollars the user
-// chose NOT to gamble — the app never holds, moves, or touches real funds.
+// THE UPSIDE MODEL — "you can't really lose":
+//   - You fund an Upside `balance` from a connected bank (all SIMULATED here —
+//     this demo never touches real money or connects to a real institution).
+//   - You predict on real events, staking from that balance.
+//   - WIN  → your stake + profit are paid back into your balance (withdrawable).
+//   - LOSE → your stake (minus a small platform fee) is routed into a connected
+//     savings / retirement account (a Roth IRA by default). The "loss" becomes
+//     money invested in your future, not money gone.
+//   `savings` is the "Invested" tracker: every dollar routed to a destination,
+//   from a lost prediction or a manually redirected urge.
+//   `points` remains a separate PLAY currency for the friendly social layer
+//   (leaderboard + head-to-head challenges) — never real money.
 
-import { potentialPayout, dayKey, daysBetween } from '../lib/format.js'
+import { dayKey, daysBetween } from '../lib/format.js'
+
+// Platform fee taken from a lost stake before the rest is routed to savings.
+// This is the honest business model: 95% of a loss still lands in your account.
+export const LOSS_FEE_RATE = 0.05
+
+// Round a dollar amount to cents so repeated math never drifts the balance.
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
 // Schema version for the persisted state. Bump when the shape changes; the
 // migrator (migrateState) backfills missing keys so older blobs still load.
-export const SCHEMA_VERSION = 3
+export const SCHEMA_VERSION = 4
 
 // A lightly pre-populated state so a brand-new user sees a living dashboard
 // instead of empty screens. All values are illustrative play data.
@@ -39,7 +55,37 @@ export function createInitialState() {
     // Per-day staking tracker for the self-imposed limit: { day, staked }.
     stakedToday: { day: dayKey(), amount: 0 },
     points: 8550,
-    // Seed positions reference real mock markets by id.
+
+    // --- Real-money layer (all SIMULATED — no funds are ever moved) ----------
+    // The funded Upside balance you predict from, in dollars. Wins pay back
+    // here; losses route to a connected destination account (see below).
+    balance: 1000,
+    // The linked bank / debit funding source used to top up the balance.
+    // In this demo it is pre-connected so screens look lived-in.
+    funding: {
+      connected: true,
+      institution: 'Chase',
+      mask: '4821',
+      connectedAt: '2026-06-08T14:00:00.000Z',
+    },
+    // Connected destinations for redirected losses. `balance` tracks how much
+    // has been routed into each so far. All simulated.
+    destinations: [
+      {
+        id: 'dest-roth',
+        kind: 'roth_ira',
+        institution: 'Fidelity',
+        mask: '7793',
+        balance: 140,
+        connectedAt: '2026-06-08T14:02:00.000Z',
+      },
+    ],
+    // Which destination a lost stake (or a manual redirect) is routed into.
+    defaultDestinationId: 'dest-roth',
+    // Lifetime platform fees taken from losses (shown transparently in the app).
+    feesPaid: 7.37,
+
+    // Seed positions reference real mock markets by id. Stakes are in dollars.
     positions: [
       {
         id: 'pos-seed-1',
@@ -47,7 +93,7 @@ export function createInitialState() {
         outcomeId: 'yes',
         outcomeLabel: 'Yes',
         question: 'Will Bitcoin close above $100,000 by the end of the quarter?',
-        stake: 800,
+        stake: 80,
         price: 0.48,
         status: 'open',
         payout: 0,
@@ -59,7 +105,7 @@ export function createInitialState() {
         outcomeId: 'yes',
         outcomeLabel: 'Yes',
         question: 'Will the Fed cut interest rates at the next meeting?',
-        stake: 650,
+        stake: 65,
         price: 0.71,
         status: 'open',
         payout: 0,
@@ -68,20 +114,27 @@ export function createInitialState() {
     ],
     // marketId -> winning outcomeId for markets the user has resolved.
     resolvedMarkets: {},
+    // "Invested" — dollars routed into a destination account, from losses and
+    // manual urge redirects. `total` mirrors the sum across destinations.
     savings: {
-      goal: 500,
+      goal: 1000,
       total: 140,
       entries: [
         {
           id: 'sav-seed-1',
           amount: 60,
-          note: 'Skipped the Sunday parlay',
+          kind: 'redirect',
+          destinationId: 'dest-roth',
+          note: 'Skipped the Sunday parlay — sent it to my Roth instead',
           createdAt: '2026-06-09T20:15:00.000Z',
         },
         {
           id: 'sav-seed-2',
           amount: 80,
-          note: 'Closed the betting app, moved it here instead',
+          kind: 'loss',
+          fee: 4.21,
+          destinationId: 'dest-roth',
+          note: 'Lost a Lakers prediction — invested it, not gone',
           createdAt: '2026-06-15T23:40:00.000Z',
         },
       ],
@@ -152,17 +205,29 @@ export function stakeRemainingToday(state) {
 function recordStake(state, amount) {
   const today = dayKey()
   const prior = state.stakedToday?.day === today ? state.stakedToday.amount : 0
-  return { day: today, amount: prior + amount }
+  return { day: today, amount: round2(prior + amount) }
+}
+
+// The destination account a lost stake / redirect is routed into (or null).
+export function defaultDestination(state) {
+  const id = state.defaultDestinationId
+  return state.destinations?.find((d) => d.id === id) || state.destinations?.[0] || null
+}
+
+// Credit an amount into a destination's running balance (immutably).
+function creditDestination(destinations, destId, amount) {
+  if (!destId || amount <= 0) return destinations
+  return destinations.map((d) => (d.id === destId ? { ...d, balance: round2(d.balance + amount) } : d))
 }
 
 export function reducer(state, action) {
   switch (action.type) {
-    // --- Play-money betting -------------------------------------------------
+    // --- Funded predictions -------------------------------------------------
+    // Stake real (simulated) dollars from the funded balance on a prediction.
     case 'PLACE_BET': {
       const { marketId, outcomeId, outcomeLabel, price, question } = action.payload
-      // Points are an integer currency — never let a fractional stake drift the balance.
-      const stake = Math.floor(Number(action.payload.stake) || 0)
-      if (stake <= 0 || stake > state.points) return state // guard: no overdraw
+      const stake = round2(action.payload.stake)
+      if (stake <= 0 || stake > state.balance) return state // guard: no overdraw
       if (inCooloff(state)) return state // self-imposed break is active
       if (stake > stakeRemainingToday(state)) return state // self-imposed daily limit
 
@@ -180,36 +245,66 @@ export function reducer(state, action) {
       }
       return {
         ...state,
-        points: state.points - stake,
+        balance: round2(state.balance - stake),
         stakedToday: recordStake(state, stake),
         positions: [position, ...state.positions],
       }
     }
 
     // Resolve every OPEN position on a market against a chosen winning outcome.
+    //   WIN  → stake + profit paid back into the balance.
+    //   LOSE → stake, minus the platform fee, routed into the default
+    //          destination account (a Roth IRA by default) and logged as
+    //          "Invested". Net worth only ever dips by the small fee.
     case 'RESOLVE_MARKET': {
       const { marketId, winningOutcomeId } = action.payload
-      let pointsDelta = 0
+      const destId = state.defaultDestinationId
+      let balanceDelta = 0
+      let investedDelta = 0
+      let feeDelta = 0
       let wins = 0
       let losses = 0
+      const newEntries = []
 
       const positions = state.positions.map((pos) => {
         if (pos.marketId !== marketId || pos.status !== 'open') return pos
         const won = pos.outcomeId === winningOutcomeId
         if (won) {
-          const payout = potentialPayout(pos.stake, pos.price)
-          pointsDelta += payout
+          const payout = round2(pos.stake / pos.price) // stake × (1 / price)
+          balanceDelta += payout
           wins += 1
           return { ...pos, status: 'won', payout }
         }
+        // Loss: route stake minus fee into savings; the rest is gone-but-yours.
+        const fee = round2(pos.stake * LOSS_FEE_RATE)
+        const routed = round2(pos.stake - fee)
+        investedDelta = round2(investedDelta + routed)
+        feeDelta = round2(feeDelta + fee)
         losses += 1
-        return { ...pos, status: 'lost', payout: 0 }
+        newEntries.push({
+          id: makeId('sav'),
+          amount: routed,
+          fee,
+          kind: 'loss',
+          destinationId: destId,
+          note: 'Lost prediction — invested instead of lost',
+          question: pos.question,
+          createdAt: new Date().toISOString(),
+        })
+        return { ...pos, status: 'lost', payout: 0, routed, fee }
       })
 
       return {
         ...state,
         positions,
-        points: state.points + pointsDelta,
+        balance: round2(state.balance + balanceDelta),
+        destinations: creditDestination(state.destinations, destId, investedDelta),
+        feesPaid: round2((state.feesPaid || 0) + feeDelta),
+        savings: {
+          ...state.savings,
+          total: round2(state.savings.total + investedDelta),
+          entries: [...newEntries, ...state.savings.entries],
+        },
         resolvedMarkets: { ...state.resolvedMarkets, [marketId]: winningOutcomeId },
         stats: {
           wins: state.stats.wins + wins,
@@ -221,6 +316,68 @@ export function reducer(state, action) {
     // Top up play points (e.g. a "daily play allowance"). Never real money.
     case 'ADD_POINTS': {
       return { ...state, points: state.points + action.payload.amount }
+    }
+
+    // --- Connected accounts (all SIMULATED — no real institution is reached) -
+    // Link a bank / debit funding source used to top up the balance.
+    case 'CONNECT_FUNDING': {
+      const { institution, mask } = action.payload
+      return {
+        ...state,
+        funding: {
+          connected: true,
+          institution: institution || 'Your bank',
+          mask: mask || '••••',
+          connectedAt: new Date().toISOString(),
+        },
+      }
+    }
+
+    // Simulated deposit from the funding source into the Upside balance.
+    case 'FUND_BALANCE': {
+      const amount = round2(action.payload.amount)
+      if (amount <= 0 || !state.funding?.connected) return state
+      return { ...state, balance: round2(state.balance + amount) }
+    }
+
+    // Simulated withdrawal of winnings back to the funding source.
+    case 'WITHDRAW_BALANCE': {
+      const amount = round2(action.payload.amount)
+      if (amount <= 0 || amount > state.balance) return state
+      return { ...state, balance: round2(state.balance - amount) }
+    }
+
+    // Link a destination account (Roth IRA, HYSA, etc.) for redirected losses.
+    case 'CONNECT_DESTINATION': {
+      const { kind, institution, mask } = action.payload
+      const dest = {
+        id: makeId('dest'),
+        kind: kind || 'roth_ira',
+        institution: institution || 'Your account',
+        mask: mask || '••••',
+        balance: 0,
+        connectedAt: new Date().toISOString(),
+      }
+      return {
+        ...state,
+        destinations: [...state.destinations, dest],
+        // First connected destination becomes the default automatically.
+        defaultDestinationId: state.defaultDestinationId || dest.id,
+      }
+    }
+
+    case 'SET_DEFAULT_DESTINATION': {
+      const { id } = action.payload
+      if (!state.destinations.some((d) => d.id === id)) return state
+      return { ...state, defaultDestinationId: id }
+    }
+
+    case 'REMOVE_DESTINATION': {
+      const { id } = action.payload
+      const destinations = state.destinations.filter((d) => d.id !== id)
+      const defaultDestinationId =
+        state.defaultDestinationId === id ? destinations[0]?.id || null : state.defaultDestinationId
+      return { ...state, destinations, defaultDestinationId }
     }
 
     // --- Onboarding & profile ----------------------------------------------
@@ -388,21 +545,29 @@ export function reducer(state, action) {
       return { ...state, points: state.points + pointsDelta, social: { ...state.social, challenges } }
     }
 
-    // --- Savings redirect ("Money Kept") -----------------------------------
+    // --- Savings redirect ("Invested") -------------------------------------
+    // A manual redirect (e.g. from the urge flow): move money you were about to
+    // gamble straight into your default destination account. No fee — it's your
+    // own money going where you choose.
     case 'ADD_SAVINGS': {
-      const { amount, note } = action.payload
+      const { note } = action.payload
+      const amount = round2(action.payload.amount)
       if (amount <= 0) return state
+      const destId = state.defaultDestinationId
       const entry = {
         id: makeId('sav'),
         amount,
+        kind: 'redirect',
+        destinationId: destId,
         note: note?.trim() || 'Redirected a gambling impulse',
         createdAt: new Date().toISOString(),
       }
       return {
         ...state,
+        destinations: creditDestination(state.destinations, destId, amount),
         savings: {
           ...state.savings,
-          total: state.savings.total + amount,
+          total: round2(state.savings.total + amount),
           entries: [entry, ...state.savings.entries],
         },
       }
@@ -457,6 +622,12 @@ export function migrateState(loaded) {
     settings: { ...base.settings, ...loaded.settings },
     stats: { ...base.stats, ...loaded.stats },
     social: { ...base.social, ...loaded.social },
+    funding: { ...base.funding, ...loaded.funding },
+    destinations: loaded.destinations || base.destinations,
+    defaultDestinationId:
+      loaded.defaultDestinationId !== undefined ? loaded.defaultDestinationId : base.defaultDestinationId,
+    balance: loaded.balance !== undefined ? loaded.balance : base.balance,
+    feesPaid: loaded.feesPaid !== undefined ? loaded.feesPaid : base.feesPaid,
     stakedToday: loaded.stakedToday || base.stakedToday,
     __v: SCHEMA_VERSION,
   }

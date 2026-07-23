@@ -11,6 +11,7 @@ import {
   inCooloff,
   stakeRemainingToday,
   stakedToday,
+  defaultDestination,
   SCHEMA_VERSION,
 } from './reducer.js'
 
@@ -27,6 +28,9 @@ import {
  */
 
 export { SCHEMA_VERSION }
+
+// Round dollars to cents so summed derived values never show float drift.
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
 const AppStateContext = createContext(null)
 
@@ -111,7 +115,8 @@ export function AppProvider({ children }) {
   const derived = useMemo(() => {
     const openPositions = state.positions.filter((p) => p.status === 'open')
     const settledPositions = state.positions.filter((p) => p.status !== 'open')
-    const pointsAtStake = openPositions.reduce((sum, p) => sum + p.stake, 0)
+    // Dollars currently locked in open predictions.
+    const atStake = round2(openPositions.reduce((sum, p) => sum + p.stake, 0))
     const savingsProgress = Math.min(
       1,
       state.savings.goal ? state.savings.total / state.savings.goal : 0,
@@ -120,13 +125,26 @@ export function AppProvider({ children }) {
     const winRate = totalGames ? state.stats.wins / totalGames : 0
     const canClaimDaily = state.lastAllowanceClaim !== dayKey()
 
+    const dest = defaultDestination(state)
+    const fundingConnected = Boolean(state.funding?.connected)
+    const hasDestination = state.destinations.length > 0
+    // The user has finished linking accounts once they can both fund and route.
+    const accountsConnected = fundingConnected && hasDestination
+    // Everything the user is worth on Upside: liquid balance + invested savings.
+    const netWorth = round2(state.balance + state.savings.total)
+
     return {
       openPositions,
       settledPositions,
-      pointsAtStake,
+      atStake,
       savingsProgress,
       winRate,
       canClaimDaily,
+      defaultDest: dest,
+      fundingConnected,
+      hasDestination,
+      accountsConnected,
+      netWorth,
       cooloffActive: inCooloff(state),
       stakeRemaining: stakeRemainingToday(state),
       stakedToday: stakedToday(state),

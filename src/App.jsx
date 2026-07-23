@@ -9,6 +9,7 @@ import Insights from './pages/Insights.jsx'
 import Settings from './pages/Settings.jsx'
 import Plus from './pages/Plus.jsx'
 import Social from './pages/Social.jsx'
+import ConnectAccounts from './pages/ConnectAccounts.jsx'
 
 // Top-level app shell + client-side routes. All state lives in <AppProvider>
 // (mounted in main.jsx), so pages just read/dispatch via the useApp() hook.
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/social" element={<Social />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/money-kept" element={<MoneyKept />} />
+        <Route path="/connect" element={<ConnectAccounts />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/plus" element={<Plus />} />
         {/* Unknown routes fall back to the dashboard. */}

@@ -8,10 +8,12 @@ import PageHeader from '../components/ui/PageHeader.jsx'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import {
-  formatPoints,
+  formatUSD,
   formatDate,
   formatProbability,
-  potentialPayout,
+  payoutDollars,
+  lossSplit,
+  accountKindLabel,
   isMarketClosed,
 } from '../lib/format.js'
 import { getMarketById } from '../data/markets.js'
@@ -30,7 +32,8 @@ function simulateOutcome(market) {
 }
 
 export default function Portfolio() {
-  const { positions, openPositions, settledPositions, pointsAtStake, dispatch } = useApp()
+  const { positions, openPositions, settledPositions, atStake, defaultDest, dispatch } = useApp()
+  const destLabel = defaultDest ? accountKindLabel(defaultDest.kind) : 'savings'
 
   // Group OPEN positions by market so a single "settle" resolves them together.
   const openByMarket = useMemo(() => {
@@ -63,23 +66,23 @@ export default function Portfolio() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Play points"
+        eyebrow="Your predictions"
         title="Portfolio"
-        subtitle="Your open predictions and settled history — every figure is play points, never cash."
+        subtitle="Open predictions and settled history. Wins pay your balance; losses invest in your future."
       />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Open bets" value={openPositions.length} icon="portfolio" animate />
+        <StatTile label="Open" value={openPositions.length} icon="portfolio" animate />
         <StatTile
           label="At stake"
-          value={pointsAtStake}
-          sub="points in play"
+          value={atStake}
+          sub="in play"
           icon="clock"
           animate
-          format={(n) => `${formatPoints(n)} pts`}
+          format={formatUSD}
         />
         <StatTile label="Settled" value={settledPositions.length} icon="check" animate />
-        <StatTile label="Total bets" value={positions.length} icon="insights" animate />
+        <StatTile label="Total" value={positions.length} icon="insights" animate />
       </div>
 
       {/* Open positions ----------------------------------------------------- */}
@@ -98,7 +101,7 @@ export default function Portfolio() {
             <EmptyState
               icon="portfolio"
               title="No open positions yet"
-              body="Place a play-points prediction and it’ll show up here, ready to settle."
+              body="Make a prediction and it’ll show up here, ready to settle."
               action={
                 <Link to="/markets">
                   <Button size="sm" variant="outline">
@@ -109,10 +112,15 @@ export default function Portfolio() {
             />
           </Card>
         ) : (
-          Object.entries(openByMarket).map(([marketId, group]) => {
+          Object.entries(openByMarket).map(([marketId, group], gi) => {
             const isClosed = closedMarketIds.includes(marketId)
             return (
-              <Card key={marketId} variant="interactive" className="space-y-3">
+              <Card
+                key={marketId}
+                variant="interactive"
+                className="space-y-3"
+                {...(gi === 0 ? { 'data-tour': 'settle-position' } : {})}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-100">{group[0].question}</p>
@@ -144,10 +152,10 @@ export default function Portfolio() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold tabular-nums text-slate-100">
-                          {formatPoints(pos.stake)} pts
+                          {formatUSD(pos.stake)}
                         </p>
                         <p className="text-xs tabular-nums text-slate-400">
-                          → {formatPoints(potentialPayout(pos.stake, pos.price))} if it hits
+                          win → {formatUSD(payoutDollars(pos.stake, pos.price))}
                         </p>
                       </div>
                     </div>
@@ -177,6 +185,7 @@ export default function Portfolio() {
                 <tbody className="divide-y divide-white/5">
                   {settledPositions.map((pos) => {
                     const won = pos.status === 'won'
+                    const routed = pos.routed ?? lossSplit(pos.stake).routed
                     return (
                       <tr key={pos.id} className="transition-colors hover:bg-white/[0.03]">
                         <td className="max-w-0 px-5 py-3">
@@ -187,18 +196,18 @@ export default function Portfolio() {
                           <span className="text-slate-300">{pos.outcomeLabel}</span>
                         </td>
                         <td className="px-3 py-3 text-right tabular-nums text-slate-400">
-                          {formatPoints(pos.stake)} pts
+                          {formatUSD(pos.stake)}
                         </td>
-                        {/* Net profit/loss vs. the stake — symmetric so wins
-                            aren't overstated by showing gross payout. */}
+                        {/* Win → profit to balance. Loss → invested to savings
+                            (never a red "you lost this"): it's still the user's money. */}
                         <td className="px-5 py-3 text-right">
                           {won ? (
                             <span className="font-semibold tabular-nums text-emerald-300">
-                              +{formatPoints(Math.max(0, pos.payout - pos.stake))} pts
+                              +{formatUSD(Math.max(0, pos.payout - pos.stake))} to balance
                             </span>
                           ) : (
-                            <span className="font-semibold tabular-nums text-rose-300">
-                              −{formatPoints(pos.stake)} pts
+                            <span className="font-semibold tabular-nums text-brand-300">
+                              {formatUSD(routed)} → {destLabel}
                             </span>
                           )}
                         </td>

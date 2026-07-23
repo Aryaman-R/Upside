@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Upside — a gambling-harm-reduction web app that satisfies the prediction-betting itch with play-money markets while redirecting real-money gambling urges into simulated savings.",
+  "description": "Upside — a gambling-harm-reduction demo web app where you predict on real events with a funded balance; wins pay out and losing stakes are invested into your Roth IRA instead of lost. All money and account connections are simulated.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

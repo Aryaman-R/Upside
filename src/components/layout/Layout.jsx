@@ -63,13 +63,10 @@ function navClass({ isActive }) {
 
 function BrandMark() {
   return (
-    <Link to="/" className="flex items-center gap-2.5" aria-label="Upside home">
-      {/* Exact brand mark, snipped from Upside Logo.svg — floating, no container. */}
-      <img src="/logo-mark.svg" alt="Upside" className="h-9 w-9 shrink-0" />
-      <div>
-        <p className="font-display text-[17px] font-bold leading-none tracking-tight text-slate-50">Upside</p>
-        <p className="mt-1 text-[11px] text-slate-500">bet on yourself</p>
-      </div>
+    <Link to="/" className="flex flex-col items-start gap-1" aria-label="Upside home">
+      {/* Full primary lockup (mark + wordmark), cropped from Upside Logo.svg. */}
+      <img src="/upside-logo.svg" alt="Upside" className="h-7 w-auto shrink-0" />
+      <p className="pl-0.5 text-[11px] text-slate-500">bet on yourself</p>
     </Link>
   )
 }
